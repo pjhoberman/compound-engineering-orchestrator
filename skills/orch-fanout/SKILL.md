@@ -67,6 +67,6 @@ After each wave completes and merges, **write the recovery manifest** via `scrip
 
 Mid-wave gate decisions are collected into the single per-wave checkpoint above — not surfaced one-by-one per node.
 
-> **Circuit breaker:** systematic-failure handling (halt the run after K consecutive failed nodes and escalate) is a separate roadmap item — wrap the wave loop with it when it lands. Until then, a failed wave stops the run and the manifest preserves where to resume.
+**Circuit breaker.** After each wave, append its outcome (`pass`/`fail`) to a running list and consult `scripts/circuit_breaker.py --outcomes <list> [--threshold K]`. If it reports `tripped`, **halt the run and escalate** — a systematic problem (bad base commit, broken harness, environment fault) is failing every wave, and continuing would burn the rest of the batch. On a trip: stop spawning, surface the breaker's reason, and leave the recovery manifest at the last wave boundary so the run resumes after the root cause is fixed. A pass resets the streak, so isolated flakes don't trip it.
 
 After a run's PRs merge, re-running `orch-fanout` (or `orch-next`) refreshes the frontier from git — the graph is the durable record, so a later session resumes by reading it.

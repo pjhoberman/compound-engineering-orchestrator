@@ -407,3 +407,96 @@ describe("wave_plan.py", () => {
     expect(exitCode).toBe(2)
   })
 })
+
+describe("circuit_breaker.py", () => {
+  const CB = path.join(FIXTURES_DIR, "circuit")
+
+  async function breaker(fixture: string, extra: string[] = []) {
+    const { stdout, exitCode } = await runScript("circuit_breaker.py", [
+      "--outcomes",
+      path.join(CB, fixture),
+      ...extra,
+    ])
+    return { result: JSON.parse(stdout), exitCode }
+  }
+
+  test("trips when trailing consecutive failures reach the threshold", async () => {
+    const { result, exitCode } = await breaker("tripped.json") // 3 fails, default K=3
+    expect(exitCode).toBe(0)
+    expect(result.tripped).toBe(true)
+    expect(result.consecutive_failures).toBe(3)
+    expect(result.reason).toContain("halt")
+  })
+
+  test("does not trip below the threshold", async () => {
+    const { result } = await breaker("streak2.json") // 2 fails, K=3
+    expect(result.tripped).toBe(false)
+    expect(result.consecutive_failures).toBe(2)
+  })
+
+  test("a pass resets the failure streak", async () => {
+    const { result } = await breaker("reset.json", ["--threshold", "2"]) // fail,pass,fail
+    expect(result.consecutive_failures).toBe(1) // trailing streak after the reset
+    expect(result.tripped).toBe(false)
+  })
+
+  test("clean and empty runs never trip", async () => {
+    expect((await breaker("clean.json")).result.consecutive_failures).toBe(0)
+    expect((await breaker("empty.json")).result.tripped).toBe(false)
+  })
+
+  test("--threshold lowers the trip point", async () => {
+    const { result } = await breaker("streak2.json", ["--threshold", "2"])
+    expect(result.tripped).toBe(true)
+  })
+
+  test("K=1 trips on a single failure (boundary)", async () => {
+    const { result } = await breaker("single-fail.json", ["--threshold", "1"])
+    expect(result.tripped).toBe(true)
+    expect(result.consecutive_failures).toBe(1)
+  })
+
+  test("a streak that resumes after a reset still trips", async () => {
+    // fail,pass,fail,fail,fail with K=3 -> the trailing 3-run trips despite the earlier reset
+    const { result } = await breaker("trip-after-reset.json")
+    expect(result.tripped).toBe(true)
+    expect(result.consecutive_failures).toBe(3)
+  })
+
+  test("non-list outcomes input exits 2", async () => {
+    const { exitCode } = await runScript("circuit_breaker.py", [
+      "--outcomes",
+      path.join(CB, "not-list.json"),
+    ])
+    expect(exitCode).toBe(2)
+  })
+
+  test("an invalid outcome value exits 2", async () => {
+    const { exitCode, stderr } = await breaker("bad.json").catch(() => ({ exitCode: -1, stderr: "" } as any))
+    // bad.json contains "boom" -> the script exits 2 before emitting JSON, so call raw:
+    const raw = await runScript("circuit_breaker.py", ["--outcomes", path.join(CB, "bad.json")])
+    expect(raw.exitCode).toBe(2)
+    expect(raw.stderr).toContain("pass")
+  })
+
+  test("--threshold < 1 exits 2", async () => {
+    const { exitCode } = await runScript("circuit_breaker.py", [
+      "--outcomes",
+      path.join(CB, "clean.json"),
+      "--threshold",
+      "0",
+    ])
+    expect(exitCode).toBe(2)
+  })
+
+  test("determinism: identical output across runs", async () => {
+    const a = await breaker("tripped.json")
+    const b = await breaker("tripped.json")
+    expect(JSON.stringify(a.result)).toBe(JSON.stringify(b.result))
+  })
+
+  test("usage error: missing required args exits 2", async () => {
+    const { exitCode } = await runScript("circuit_breaker.py", [])
+    expect(exitCode).toBe(2)
+  })
+})

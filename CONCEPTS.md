@@ -82,3 +82,11 @@ One step of an `orch-fanout` run: either a parallel [[Fan-out batch]] (file-disj
 runtime-independent nodes run together) or a single [[exclusive_runtime]] node run alone. The
 unit at which the executor checkpoints — the recovery manifest is written at every wave
 boundary, so a dead run resumes from the first unfinished wave.
+
+## Circuit breaker
+
+The orch-fanout policy that halts a run after a threshold of **consecutive** failed [[Wave]]s
+and escalates, rather than burning the whole batch on a systematic fault (a bad base commit,
+a broken harness, an environment failure). A passing wave resets the streak, so isolated
+flakes don't trip it; on a trip the recovery manifest is left at the last wave boundary so the
+run resumes once the root cause is fixed.
