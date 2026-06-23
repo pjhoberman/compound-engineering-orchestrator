@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import path from "path"
+import { runScript as runScriptIn } from "./helpers/run-script"
 
 const SCRIPTS_DIR = path.join(
   __dirname,
@@ -7,20 +8,8 @@ const SCRIPTS_DIR = path.join(
 )
 const FIXTURES_DIR = path.join(__dirname, "fixtures/orch-decompose")
 
-async function runScript(
-  scriptName: string,
-  args: string[] = []
-): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-  const scriptPath = path.join(SCRIPTS_DIR, scriptName)
-  const proc = Bun.spawn(["python3", scriptPath, ...args], {
-    stdout: "pipe",
-    stderr: "pipe",
-  })
-  const stdout = await new Response(proc.stdout).text()
-  const stderr = await new Response(proc.stderr).text()
-  const exitCode = await proc.exited
-  return { stdout, stderr, exitCode }
-}
+const runScript = (scriptName: string, args: string[] = []) =>
+  runScriptIn(SCRIPTS_DIR, scriptName, args)
 
 async function compute(fixture: string) {
   const { stdout, exitCode } = await runScript("graph_compute.py", [

@@ -1,22 +1,12 @@
 import { describe, expect, test } from "bun:test"
 import path from "path"
+import { runScript as runScriptIn } from "./helpers/run-script"
 
 const SCRIPTS_DIR = path.join(__dirname, "../skills/orch-next/scripts")
 const FIXTURES_DIR = path.join(__dirname, "fixtures/orch-next")
 
-async function runScript(
-  scriptName: string,
-  args: string[] = []
-): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-  const proc = Bun.spawn(["python3", path.join(SCRIPTS_DIR, scriptName), ...args], {
-    stdout: "pipe",
-    stderr: "pipe",
-  })
-  const stdout = await new Response(proc.stdout).text()
-  const stderr = await new Response(proc.stderr).text()
-  const exitCode = await proc.exited
-  return { stdout, stderr, exitCode }
-}
+const runScript = (scriptName: string, args: string[] = []) =>
+  runScriptIn(SCRIPTS_DIR, scriptName, args)
 
 async function frontier(fixture: string) {
   const dir = path.join(FIXTURES_DIR, fixture)
@@ -65,6 +55,27 @@ describe("frontier.py", () => {
     expect(n5.blocked_on).toEqual(["n3"])
   })
 
+  test("active nodes (in-progress/in-review) are bucketed as active, not ready or blocked", async () => {
+    const { result } = await frontier("mixed")
+    // n5 is in-progress
+    expect(result.active).toEqual(["n5"])
+    expect(result.ready.map((r: any) => r.id)).not.toContain("n5")
+    expect(result.blocked.map((b: any) => b.id)).not.toContain("n5")
+  })
+
+  test("a human-pinned 'blocked' node stays blocked even when its deps are done", async () => {
+    // regression: n4 depends on n2 (done) but is pinned blocked -> must NOT be ready
+    const { result } = await frontier("mixed")
+    expect(result.ready.map((r: any) => r.id)).not.toContain("n4")
+    expect(result.blocked.map((b: any) => b.id)).toContain("n4")
+  })
+
+  test("a node present in the graph but absent from status defaults to not-started", async () => {
+    // n7 is in graph edges (deps [n1], done) but omitted from status -> ready
+    const { result } = await frontier("mixed")
+    expect(result.ready.map((r: any) => r.id)).toContain("n7")
+  })
+
   test("a cycle yields an empty frontier and surfaces the finding", async () => {
     const { result, exitCode } = await frontier("cycle")
     expect(exitCode).toBe(0)
@@ -82,5 +93,17 @@ describe("frontier.py", () => {
   test("usage error: missing required args exits 2", async () => {
     const { exitCode } = await runScript("frontier.py", [])
     expect(exitCode).toBe(2)
+  })
+
+  test("a missing/unreadable input file exits 2 with a message, not a traceback", async () => {
+    const { exitCode, stderr } = await runScript("frontier.py", [
+      "--graph",
+      "/nonexistent/graph.json",
+      "--status",
+      "/nonexistent/status.json",
+    ])
+    expect(exitCode).toBe(2)
+    expect(stderr).toContain("cannot read")
+    expect(stderr).not.toContain("Traceback")
   })
 })

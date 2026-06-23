@@ -27,14 +27,29 @@ ACTIVE = {"in-progress", "in-review"}
 
 
 def load(path):
-    with open(path, encoding="utf-8") as fh:
-        return json.load(fh)
+    try:
+        with open(path, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, json.JSONDecodeError) as exc:
+        # match the sibling scripts' usage-error contract: a bad input file exits 2
+        sys.stderr.write(f"frontier.py: cannot read {path}: {exc}\n")
+        sys.exit(2)
 
 
 def compute_frontier(graph, status):
     edges = graph.get("edges", {})
     per_node = graph.get("per_node", {})
     ids = sorted(edges.keys())
+
+    # the graph's edge set is the authoritative node universe; a status file that
+    # references nodes the graph doesn't know about is a mismatched pair — ignore
+    # those nodes but say so, rather than dropping them silently.
+    unknown = sorted(set(status.get("nodes", {}).keys()) - set(ids))
+    if unknown:
+        sys.stderr.write(
+            "frontier.py: warning: %d status node(s) absent from graph edges, ignored: %s\n"
+            % (len(unknown), ", ".join(unknown))
+        )
 
     def status_of(n):
         return status.get("nodes", {}).get(n, {}).get("status", "not-started")
@@ -60,6 +75,9 @@ def compute_frontier(graph, status):
             continue
         if st in ACTIVE:
             active_ids.append(n)
+        elif st == "blocked":
+            # a human-pinned block is terminal — never ready, even with deps done
+            blocked_ids.append(n)
         elif all(d in done for d in edges.get(n, [])):
             ready_ids.append(n)
         else:
