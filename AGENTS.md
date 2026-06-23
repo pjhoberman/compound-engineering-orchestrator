@@ -19,6 +19,7 @@ compose CE skills (`ce-plan`, `ce-brainstorm`, `ce-work`, `lfg`), never reimplem
 ## Conventions
 
 - **Task-graph vocabulary** is defined in `CONCEPTS.md`. Use those terms precisely.
+- **`docs/solutions/`** — documented solutions to past problems (bugs, conventions, workflow learnings), organized by category with YAML frontmatter (`module`, `tags`, `problem_type`). Relevant when implementing or debugging in documented areas.
 - **Scripts are stdlib Python**, resolved at runtime via `CLAUDE_SKILL_DIR`. Off-platform
   invocations must report unavailability explicitly rather than degrade.
 - **Tests** are a Bun/TypeScript harness (`tests/*.test.ts`) that shells out to the Python

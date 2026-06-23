@@ -40,7 +40,17 @@ derives `in-progress`/`done` from git; re-orient surfaces it as awaiting manual 
 until a `manual_status` pin is set. Splitting activation from code keeps status honest — a
 merged feature whose data is not yet loaded is inert.
 
+## Manual status pin
+
+A human-authored status set explicitly on a node, overriding the git-derived status. It is
+**authoritative and terminal**: derivation must never override a pin, and a node pinned
+`blocked` is never treated as ready even when its dependencies are all `done`. The mechanism
+by which a `no_pr` node is marked complete, and by which a human parks a node out of the
+ready set.
+
 ## Ready frontier
 
-Every node whose dependencies are all `done` — the set eligible to start now. The basis for
-the (planned) `orch-next` recommender and `orch-fanout` executor.
+Every node whose dependencies are all `done` and that is not itself started, blocked, or
+already in progress — the set eligible to start now. The basis for the `orch-next`
+recommender and the (planned) `orch-fanout` executor. A node carrying a `blocked` [[Manual
+status pin]] is excluded regardless of its dependencies.
