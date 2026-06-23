@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "project": "demo",
+  "run_id": "run-1",
+  "base_commit": "abc1234",
+  "wave": 2,
+  "updated_at": "2026-06-23T14:05:00Z",
+  "tasks": [
+    {"id": "n3", "status": "in-progress", "worktree": "/wt/n3", "branch": "n3/x"},
+    {"id": "n1", "status": "in-review", "worktree": "/wt/n1", "branch": "n1/y", "pr": {"open": true, "number": 5, "url": "u"}},
+    {"id": "n2", "status": "done", "worktree": "/wt/n2", "branch": "n2/z", "last_clean_merge": "def5678"}
+  ]
+}

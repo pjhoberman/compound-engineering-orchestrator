@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "project": "demo",
+  "run_id": "run-2",
+  "base_commit": "abc",
+  "wave": 1,
+  "tasks": [
+    {"id": "n1", "status": "in-progress", "worktree": null, "branch": null}
+  ]
+}

@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+*.log
+.context/
+# Recovery manifests are volatile run-state (orch-fanout), never committed — git is authoritative.
+.orch/

@@ -1,0 +1,19 @@
+{
+  "name": "compound-engineering-orchestrator",
+  "version": "0.1.0",
+  "description": "Project decomposition and orchestration on top of the compound-engineering plugin. Turns a multi-feature project into a committed, diffable task-graph and drives its nodes through the CE pipeline.",
+  "author": {
+    "name": "PJ Hoberman",
+    "url": "https://github.com/pjhoberman"
+  },
+  "homepage": "https://github.com/pjhoberman/compound-engineering-orchestrator",
+  "repository": "https://github.com/pjhoberman/compound-engineering-orchestrator",
+  "license": "MIT",
+  "keywords": [
+    "compound-engineering",
+    "orchestration",
+    "project-decomposition",
+    "task-graph",
+    "workflow-automation"
+  ]
+}
