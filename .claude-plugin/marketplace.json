@@ -1,0 +1,29 @@
+{
+  "name": "compound-engineering-orchestrator",
+  "owner": {
+    "name": "PJ Hoberman",
+    "url": "https://github.com/pjhoberman"
+  },
+  "metadata": {
+    "description": "Project decomposition and orchestration skills layered on compound-engineering.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "compound-engineering-orchestrator",
+      "description": "Turn a multi-feature project into a committed, diffable task-graph and drive its nodes through the compound-engineering pipeline.",
+      "author": {
+        "name": "PJ Hoberman",
+        "url": "https://github.com/pjhoberman"
+      },
+      "homepage": "https://github.com/pjhoberman/compound-engineering-orchestrator",
+      "tags": [
+        "compound-engineering",
+        "orchestration",
+        "project-decomposition",
+        "task-graph"
+      ],
+      "source": "."
+    }
+  ]
+}

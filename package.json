@@ -1,0 +1,14 @@
+{
+  "name": "compound-engineering-orchestrator",
+  "version": "0.1.0",
+  "description": "Project decomposition and orchestration skills layered on the compound-engineering plugin.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "bun test",
+    "plugin:validate": "claude plugin validate .claude-plugin/marketplace.json && claude plugin validate ."
+  },
+  "devDependencies": {
+    "bun-types": "^1.0.0"
+  }
+}
