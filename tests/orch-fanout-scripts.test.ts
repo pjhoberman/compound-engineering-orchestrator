@@ -80,3 +80,58 @@ describe("manifest.py", () => {
     expect(exitCode).toBe(2)
   })
 })
+
+describe("reconcile.py", () => {
+  const RECOVER = path.join(FIXTURES_DIR, "recover")
+
+  async function reconcile() {
+    const { stdout, exitCode } = await runScript("reconcile.py", [
+      "--manifest",
+      path.join(RECOVER, "manifest.json"),
+      "--facts",
+      path.join(RECOVER, "facts.json"),
+    ])
+    return { result: JSON.parse(stdout), exitCode }
+  }
+
+  test("reconciles each task's status from manifest + live facts", async () => {
+    const { result, exitCode } = await reconcile()
+    expect(exitCode).toBe(0)
+    const s = Object.fromEntries(result.tasks.map((t: any) => [t.id, t.reconciled_status]))
+    expect(s.n1).toBe("in-progress") // worktree + branch, no PR
+    expect(s.n2).toBe("in-review") // PR open
+    expect(s.n4).toBe("interrupted") // worktree gone
+    expect(s.n5).toBe("done") // manifest done
+    expect(s.n6).toBe("failed") // last run failed
+    expect(s.n8).toBe("abandoned") // explicitly abandoned
+  })
+
+  test("git is authoritative: a merged PR or branch overrides the manifest's in-flight status", async () => {
+    const { result } = await reconcile()
+    const s = Object.fromEntries(result.tasks.map((t: any) => [t.id, t.reconciled_status]))
+    expect(s.n3).toBe("done") // manifest said in-review, but the PR merged
+    expect(s.n7).toBe("done") // manifest said in-progress, but the branch merged
+  })
+
+  test("interrupted task carries a concrete re-dispatch action", async () => {
+    const { result } = await reconcile()
+    const n4 = result.tasks.find((t: any) => t.id === "n4")
+    expect(n4.action).toContain("re-dispatch")
+  })
+
+  test("resume list names exactly the tasks needing action, sorted", async () => {
+    const { result } = await reconcile()
+    expect(result.resume).toEqual(["n1", "n2", "n4", "n6"])
+  })
+
+  test("determinism: identical output across runs", async () => {
+    const a = await reconcile()
+    const b = await reconcile()
+    expect(JSON.stringify(a.result)).toBe(JSON.stringify(b.result))
+  })
+
+  test("usage error: missing --manifest exits 2", async () => {
+    const { exitCode } = await runScript("reconcile.py", [])
+    expect(exitCode).toBe(2)
+  })
+})
