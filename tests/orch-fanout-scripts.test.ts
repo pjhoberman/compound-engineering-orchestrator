@@ -316,3 +316,94 @@ describe("partition.py", () => {
     expect(exitCode).toBe(2)
   })
 })
+
+describe("wave_plan.py", () => {
+  const WP = path.join(FIXTURES_DIR, "wave-plan")
+
+  async function wavePlan(partitionFile = "partition.json") {
+    const { stdout, exitCode } = await runScript("wave_plan.py", [
+      "--partition",
+      path.join(WP, partitionFile),
+      "--graph",
+      path.join(WP, "graph.json"),
+    ])
+    return { result: JSON.parse(stdout), exitCode }
+  }
+
+  test("extracts exclusive_runtime nodes into solo waves; keeps the rest parallel", async () => {
+    const { result, exitCode } = await wavePlan()
+    expect(exitCode).toBe(0)
+    // batch [n1,n2,n3] with n2 exclusive -> parallel [n1,n3] + solo n2
+    const first = result.waves[0]
+    expect(first.kind).toBe("parallel")
+    expect(first.ids).toEqual(["n1", "n3"])
+    expect(first.ids).not.toContain("n2")
+    // a fully non-exclusive batch stays one parallel wave
+    const parallels = result.waves.filter((w: any) => w.kind === "parallel")
+    expect(parallels.some((w: any) => JSON.stringify(w.ids) === JSON.stringify(["n5", "n6"]))).toBe(true)
+  })
+
+  test("an exclusive node never shares a wave; each gets its own solo wave", async () => {
+    const { result } = await wavePlan()
+    const solos = result.waves.filter((w: any) => w.kind === "solo").map((w: any) => w.id)
+    expect(solos.sort()).toEqual(["n2", "n4"]) // both exclusive nodes, separate solo waves
+    for (const w of result.waves) {
+      if (w.kind === "parallel") {
+        expect(w.ids).not.toContain("n2")
+        expect(w.ids).not.toContain("n4")
+      }
+    }
+    expect(result.wave_count).toBe(4)
+  })
+
+  test("an empty partition yields no waves", async () => {
+    const { result, exitCode } = await wavePlan("empty-partition.json")
+    expect(exitCode).toBe(0)
+    expect(result.waves).toEqual([])
+    expect(result.wave_count).toBe(0)
+  })
+
+  test("determinism: identical output across runs", async () => {
+    const a = await wavePlan()
+    const b = await wavePlan()
+    expect(JSON.stringify(a.result)).toBe(JSON.stringify(b.result))
+  })
+
+  test("a graph without node_meta exits 2", async () => {
+    const { exitCode, stderr } = await runScript("wave_plan.py", [
+      "--partition",
+      path.join(WP, "partition.json"),
+      "--graph",
+      path.join(FIXTURES_DIR, "partition-no-meta", "graph.json"),
+    ])
+    expect(exitCode).toBe(2)
+    expect(stderr).toContain("node_meta")
+  })
+
+  test("a missing --partition file exits 2", async () => {
+    const { exitCode, stderr } = await runScript("wave_plan.py", [
+      "--partition",
+      "/nonexistent/partition.json",
+      "--graph",
+      path.join(WP, "graph.json"),
+    ])
+    expect(exitCode).toBe(2)
+    expect(stderr).toContain("cannot read")
+  })
+
+  test("a batched node absent from node_meta exits 2 (stale graph/partition pair), not silently parallel", async () => {
+    const { exitCode, stderr } = await runScript("wave_plan.py", [
+      "--partition",
+      path.join(WP, "partition-stale.json"),
+      "--graph",
+      path.join(WP, "graph.json"),
+    ])
+    expect(exitCode).toBe(2)
+    expect(stderr).toContain("stale")
+  })
+
+  test("usage error: missing required args exits 2", async () => {
+    const { exitCode } = await runScript("wave_plan.py", [])
+    expect(exitCode).toBe(2)
+  })
+})

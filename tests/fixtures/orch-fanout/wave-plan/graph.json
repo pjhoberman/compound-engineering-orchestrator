@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "node_meta": {
+    "n1": {"stage": "work", "no_pr": false, "exclusive_runtime": false, "files": []},
+    "n2": {"stage": "work", "no_pr": false, "exclusive_runtime": true, "files": []},
+    "n3": {"stage": "work", "no_pr": false, "exclusive_runtime": false, "files": []},
+    "n4": {"stage": "work", "no_pr": false, "exclusive_runtime": true, "files": []},
+    "n5": {"stage": "work", "no_pr": false, "exclusive_runtime": false, "files": []},
+    "n6": {"stage": "work", "no_pr": false, "exclusive_runtime": false, "files": []}
+  }
+}

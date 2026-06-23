@@ -48,12 +48,21 @@ describe("graph_compute.py", () => {
       const m = result.node_meta[id]
       expect(m).toHaveProperty("stage")
       expect(m).toHaveProperty("no_pr")
+      expect(typeof m.exclusive_runtime).toBe("boolean") // runtime-exclusivity signal for orch-fanout
       expect(Array.isArray(m.files)).toBe(true)
     }
+    // the valid fixture declares no exclusive_runtime column -> every node defaults false
+    expect(Object.values(result.node_meta).every((m: any) => m.exclusive_runtime === false)).toBe(true)
     // at least one work node exposes a parsed file footprint (path + create/modify marker)
     const withFiles = Object.values(result.node_meta).filter((m: any) => m.files.length > 0)
     expect(withFiles.length).toBeGreaterThan(0)
     expect((withFiles[0] as any).files[0]).toHaveLength(2)
+  })
+
+  test("node_meta reflects a declared exclusive_runtime column (true vs default false)", async () => {
+    const { result } = await compute("exclusive-runtime")
+    expect(result.node_meta.n1.exclusive_runtime).toBe(true) // index column 'true'
+    expect(result.node_meta.n2.exclusive_runtime).toBe(false) // column blank -> false
   })
 
   test("valid graph: detects a multi-root forest", async () => {

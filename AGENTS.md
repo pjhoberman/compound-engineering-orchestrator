@@ -15,6 +15,14 @@ compose CE skills (`ce-plan`, `ce-brainstorm`, `ce-work`, `lfg`), never reimplem
   only (`disable-model-invocation: true`). Read its `references/` before producing or
   auditing a graph; the bundled `scripts/graph_compute.py` and `scripts/reorient.py` own all
   DAG math and status derivation — present their JSON, never recompute it.
+- **`orch-next`** (`skills/orch-next/`) — read the task-graph, compute the ready frontier
+  (`scripts/frontier.py`, a pure consumer of graph_compute + reorient JSON), and recommend
+  the single highest-leverage next move. Manual-invoke only.
+- **`orch-fanout`** (`skills/orch-fanout/`) — execute ready work in runtime-safe parallel
+  waves: partition into collision-free batches, sequence them with `scripts/wave_plan.py`
+  (exclusive-runtime nodes run solo), drive each wave through `/lfg` behind a visible
+  preview, and checkpoint recovery state (`scripts/{manifest,reconcile}.py`) per wave.
+  Manual-invoke only. Composes `ce-work`/`lfg` + the sibling orch-decompose/orch-next scripts.
 
 ## Conventions
 
