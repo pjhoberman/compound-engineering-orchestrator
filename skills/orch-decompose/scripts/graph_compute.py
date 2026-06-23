@@ -98,6 +98,15 @@ def is_no_pr(node):
     return str(node.get("no_pr", "")).lower() == "true"
 
 
+def is_exclusive_runtime(node):
+    """The node's exclusive_runtime column ('true' / '') coerced to bool.
+
+    True marks a node that needs a non-shareable runtime resource (server/DB/port/singleton)
+    at /lfg time, so orch-fanout runs it as a solo wave rather than fanning it out.
+    """
+    return str(node.get("exclusive_runtime", "")).lower() == "true"
+
+
 def parse_node_file(node_path):
     """Return {'files': [(path, marker)], 'mirror': bool} for a node markdown file.
 
@@ -384,6 +393,7 @@ def main(argv):
             i: {
                 "stage": nodes_by_id[i].get("stage"),
                 "no_pr": is_no_pr(nodes_by_id[i]),
+                "exclusive_runtime": is_exclusive_runtime(nodes_by_id[i]),
                 "files": [[p, m] for p, m in node_meta[i].get("files", [])],
             }
             for i in ids

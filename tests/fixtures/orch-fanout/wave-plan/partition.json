@@ -1,0 +1,7 @@
+{
+  "max_batch": 5,
+  "batches": [["n1", "n2", "n3"], ["n4"], ["n5", "n6"]],
+  "excluded": [],
+  "eligible_count": 6,
+  "batch_count": 3
+}

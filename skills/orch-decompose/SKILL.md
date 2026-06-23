@@ -45,6 +45,7 @@ For each node, assess how settled it is and assign **stage** and **model**:
   - *ambiguous problem or scope* → `brainstorm`; write a brief.
   - *tie between `plan` and `work`* → break toward `plan` whenever any sub-item still needs a decision.
 - **model** (recommended tier, human-overridable): `generation` for well-specified mechanical work; `ceiling` for cross-cutting or architectural judgment. Nudge toward `ceiling` for security- or credential-sensitive surfaces even when the work looks mechanical.
+- **exclusive_runtime** (optional, default false): set `true` for a node whose `/lfg` run needs a non-shareable runtime resource — boots a dev server, migrates a dev DB, binds a fixed port, or drives a singleton local service. `orch-fanout` runs such nodes as solo waves instead of fanning them out; leave unset for runtime-independent work (tests, codegen, pure edits).
 
 Write the graph under `docs/plans/<project-slug>/`: the `index.md` table (with the `schema_version` header) and one `<node-id>-<slug>.md` file per node. Above the table in `index.md`, write a short **preamble** — a project title, a one-or-two-line description, and a "Decisions locked at decompose time" block naming the framing the cut depends on. It carries context a bare table loses; keep its lines from starting with `|` (see `references/task-graph-schema.md`). These are committed, diffable artifacts the user may hand-edit.
 

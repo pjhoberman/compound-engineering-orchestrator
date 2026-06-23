@@ -67,3 +67,18 @@ at once because no two of them touch the same file — the unit `orch-fanout` di
 concurrent `/lfg` jobs. Bounded in size by the delegation crossover (beyond which fan-out
 stops paying off) and ordered by critical-path leverage. The collision-free property is by
 **normalized** file path: two nodes editing one file in different spellings still collide.
+
+## exclusive_runtime
+
+A node property (optional, default false) marking work whose `/lfg` run needs a
+non-shareable runtime resource — a dev server, database, port, or singleton local service.
+Worktrees isolate code but not runtime, so `orch-fanout` runs an `exclusive_runtime` node as
+a solo [[Wave]] (never concurrent with another run) rather than fanning it out. Declared, not
+inferred; the [[Fan-out batch]] preview is the safety net for a missed flag.
+
+## Wave
+
+One step of an `orch-fanout` run: either a parallel [[Fan-out batch]] (file-disjoint,
+runtime-independent nodes run together) or a single [[exclusive_runtime]] node run alone. The
+unit at which the executor checkpoints — the recovery manifest is written at every wave
+boundary, so a dead run resumes from the first unfinished wave.

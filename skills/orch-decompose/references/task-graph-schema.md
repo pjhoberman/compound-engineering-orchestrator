@@ -61,6 +61,7 @@ Decisions locked at decompose time:
 `not-started` / `in-progress` / `in-review` / `done` / `blocked`. Derivation logic lives in `scripts/reorient.py`; the meanings:
 
 - **`done` means code merged, not feature live.** A node whose PR(s) are all merged is `done` even if the shipped capability is inert in production pending a separate activation step. Re-orient emits a derived annotation — "merged, awaiting activation by `nX`" — when a `done` node has a not-done downstream that activates it. There is deliberately **no** "live" status value; keep the vocabulary small.
+- **`exclusive_runtime` nodes** (optional column, default false) need a non-shareable runtime resource — a dev server, database, port, or singleton local service — at `/lfg` time. `orch-fanout` runs them as solo waves (never concurrent with another run) rather than fanning them out. Set it for nodes that boot a server, migrate a dev DB, or bind a fixed port; leave it unset for runtime-independent work (tests, codegen, pure edits). It is inert metadata until `orch-fanout` reads it.
 - **`no_pr` nodes** never derive `in-progress`/`done` from git. Re-orient surfaces them as `not-started (awaiting manual completion)` until a `manual_status` pin is set. orch-decompose writes the pin expectation into the node when it creates one.
 - **`blocked`** is normally a human pin (`manual_status: blocked`).
 
