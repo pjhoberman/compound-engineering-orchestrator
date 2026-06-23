@@ -471,12 +471,39 @@ describe("circuit_breaker.py", () => {
     expect(exitCode).toBe(2)
   })
 
-  test("an invalid outcome value exits 2", async () => {
-    const { exitCode, stderr } = await breaker("bad.json").catch(() => ({ exitCode: -1, stderr: "" } as any))
-    // bad.json contains "boom" -> the script exits 2 before emitting JSON, so call raw:
-    const raw = await runScript("circuit_breaker.py", ["--outcomes", path.join(CB, "bad.json")])
-    expect(raw.exitCode).toBe(2)
-    expect(raw.stderr).toContain("pass")
+  test("an invalid outcome value exits 2 and names the bad value", async () => {
+    // bad.json contains "boom" -> exit 2 before any JSON, so call runScript directly
+    const { exitCode, stderr } = await runScript("circuit_breaker.py", [
+      "--outcomes",
+      path.join(CB, "bad.json"),
+    ])
+    expect(exitCode).toBe(2)
+    expect(stderr).toContain("boom") // the offending value is named, not just any 'pass' substring
+  })
+
+  test("a non-string outcome element (JSON number/null) exits 2", async () => {
+    const { exitCode } = await runScript("circuit_breaker.py", [
+      "--outcomes",
+      path.join(CB, "non-string.json"),
+    ])
+    expect(exitCode).toBe(2)
+  })
+
+  test("a trailing pass resets the streak to zero (no trip even after an earlier run)", async () => {
+    // fail,fail,fail,pass with default K=3 -> trailing streak 0, not tripped
+    const { result } = await breaker("trailing-pass.json")
+    expect(result.consecutive_failures).toBe(0)
+    expect(result.tripped).toBe(false)
+  })
+
+  test("a missing --outcomes file exits 2 with a message, not a traceback", async () => {
+    const { exitCode, stderr } = await runScript("circuit_breaker.py", [
+      "--outcomes",
+      "/nonexistent/outcomes.json",
+    ])
+    expect(exitCode).toBe(2)
+    expect(stderr).toContain("cannot read")
+    expect(stderr).not.toContain("Traceback")
   })
 
   test("--threshold < 1 exits 2", async () => {

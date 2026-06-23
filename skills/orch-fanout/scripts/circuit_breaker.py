@@ -36,10 +36,12 @@ def load(path):
 
 
 def evaluate(outcomes, threshold):
-    """Pure: trip when the trailing run of consecutive failures reaches the threshold.
+    """Trip when the trailing run of consecutive failures reaches the threshold.
 
     The executor consults after each wave with its running outcome list, so only the current
-    trailing streak matters — a pass resets it.
+    trailing streak matters — a pass resets it, and the function re-derives the streak from the
+    full list each call (it holds no state between calls; the executor owns accumulation).
+    Validates its input and exits 2 via fail() on a malformed list, so it is not side-effect-free.
     """
     if not isinstance(outcomes, list):
         fail("outcomes must be a JSON array of 'pass'/'fail' strings")

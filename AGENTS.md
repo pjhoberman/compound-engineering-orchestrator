@@ -21,7 +21,8 @@ compose CE skills (`ce-plan`, `ce-brainstorm`, `ce-work`, `lfg`), never reimplem
 - **`orch-fanout`** (`skills/orch-fanout/`) — execute ready work in runtime-safe parallel
   waves: partition into collision-free batches, sequence them with `scripts/wave_plan.py`
   (exclusive-runtime nodes run solo), drive each wave through `/lfg` behind a visible
-  preview, and checkpoint recovery state (`scripts/{manifest,reconcile}.py`) per wave.
+  preview, checkpoint recovery state (`scripts/{manifest,reconcile}.py`) per wave, and halt
+  on systematic failure via `scripts/circuit_breaker.py` (trip after K consecutive failed waves).
   Manual-invoke only. Composes `ce-work`/`lfg` + the sibling orch-decompose/orch-next scripts.
 
 ## Conventions
