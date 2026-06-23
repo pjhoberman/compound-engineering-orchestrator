@@ -18,6 +18,7 @@ leverage), the excluded set with reasons, and counts. Exit 0, 2 on usage error.
 """
 import argparse
 import json
+import os
 import sys
 
 DEFAULT_MAX_BATCH = 5
@@ -59,7 +60,15 @@ def partition(graph, frontier, max_batch):
     excluded = []
     for r in ranked:
         nid = r["id"]
-        meta = node_meta.get(nid, {})
+        if nid not in node_meta:
+            # a ready node the graph doesn't know about means a stale graph/frontier pair —
+            # say so explicitly rather than blaming a None stage.
+            excluded.append({
+                "id": nid,
+                "reason": "absent from graph node_meta — stale graph/frontier pair; re-run graph_compute.py",
+            })
+            continue
+        meta = node_meta[nid]
         stage = meta.get("stage")
         if stage != "work":
             excluded.append({
@@ -75,7 +84,15 @@ def partition(graph, frontier, max_batch):
                 "reason": "no_pr ops node — requires manual completion, not fan-out",
             })
             continue
-        paths = frozenset(f[0] for f in meta.get("files", []) if isinstance(f, (list, tuple)) and f)
+        # normalize paths before the collision check: 'a.py', './a.py', and 'dir/../a.py' are
+        # the same file, and treating them as distinct would co-batch two nodes that edit it —
+        # the exact merge corruption the collision-free invariant exists to prevent. (Absolute
+        # paths are out of contract per the embedded-unit schema — repo-relative only.)
+        paths = frozenset(
+            os.path.normpath(f[0])
+            for f in meta.get("files", [])
+            if isinstance(f, (list, tuple)) and f
+        )
         eligible.append((nid, paths))
 
     # greedy first-fit packing: a node joins the first batch it doesn't collide with and that

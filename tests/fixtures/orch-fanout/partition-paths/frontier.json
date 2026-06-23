@@ -1,0 +1,10 @@
+{
+  "ready": [
+    {"id": "nP1", "slack": 0, "critical": true, "unblocks": 0},
+    {"id": "nP2", "slack": 0, "critical": true, "unblocks": 0},
+    {"id": "nP3", "slack": 0, "critical": true, "unblocks": 0},
+    {"id": "nP4", "slack": 0, "critical": true, "unblocks": 0},
+    {"id": "nP5", "critical": false, "unblocks": 0}
+  ],
+  "active": [], "blocked": [], "done": [], "cycle": false
+}

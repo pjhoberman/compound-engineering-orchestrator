@@ -192,9 +192,26 @@ describe("partition.py", () => {
     const { result } = await partition()
     // n1 touches a.py; n3 also touches a.py -> must be in different batches
     expect(batchOf(result, "n1")).not.toContain("n3")
+    expect(batchOf(result, "n3")).toBeDefined() // n3 is batched, not silently dropped
     // n2 (c.py) and n5 (d.py) don't collide with n1 (a.py/b.py) -> share its batch
     expect(batchOf(result, "n1")).toContain("n2")
     expect(batchOf(result, "n1")).toContain("n5")
+    // every eligible node lands in exactly one batch (no silent drops)
+    const total = result.batches.reduce((n: number, b: string[]) => n + b.length, 0)
+    expect(total).toBe(result.eligible_count)
+  })
+
+  test("normalizes paths so one file in different spellings never co-batches (collision safety)", async () => {
+    // nP1 'a.py', nP2 './a.py', nP3 'dir/../a.py' are the SAME file -> must be pairwise split,
+    // else parallel /lfg worktrees would edit it at once. Regression for the path-normalization P0.
+    const { result } = await partitionIn("partition-paths")
+    const b1 = batchOf(result, "nP1")
+    expect(b1).not.toContain("nP2")
+    expect(b1).not.toContain("nP3")
+    expect(batchOf(result, "nP2")).not.toContain("nP3")
+    expect(result.batch_count).toBeGreaterThanOrEqual(3)
+    // nP5 omits slack entirely -> inf-fallback ranking, ranked last, still batched (not dropped)
+    expect(batchOf(result, "nP5")).toBeDefined()
   })
 
   test("ranks by leverage: the highest-leverage node leads the first batch", async () => {
@@ -205,6 +222,9 @@ describe("partition.py", () => {
   test("respects --max-batch", async () => {
     const { result } = await partition(["--max-batch", "2"])
     for (const b of result.batches) expect(b.length).toBeLessThanOrEqual(2)
+    expect(result.batch_count).toBeGreaterThanOrEqual(2) // 4 eligible, cap 2 -> >=2 batches
+    const total = result.batches.reduce((n: number, b: string[]) => n + b.length, 0)
+    expect(total).toBe(result.eligible_count) // cap must not drop nodes
   })
 
   test("--max-batch < 1 is a usage error (exit 2)", async () => {
@@ -241,7 +261,7 @@ describe("partition.py", () => {
     const { result } = await partitionIn("partition-edge")
     const ex = Object.fromEntries(result.excluded.map((e: any) => [e.id, e.reason]))
     expect(ex.nE2).toContain("no_pr") // work but no_pr -> not fan-out eligible
-    expect(ex.nE4).toBeDefined() // absent from node_meta -> excluded, not silently dropped
+    expect(ex.nE4).toContain("node_meta") // absent from node_meta -> explicit reason, not "stage None"
     expect(result.eligible_count).toBe(2) // nE1, nE3
     // nE3 has an empty footprint -> collides with nothing -> batched, not excluded
     expect(batchOf(result, "nE3")).toBeDefined()
@@ -267,6 +287,17 @@ describe("partition.py", () => {
     expect(exitCode).toBe(2)
     expect(stderr).toContain("cannot read")
     expect(stderr).not.toContain("Traceback")
+  })
+
+  test("a missing --frontier file exits 2 with a message", async () => {
+    const { exitCode, stderr } = await runScript("partition.py", [
+      "--graph",
+      path.join(PART, "graph.json"),
+      "--frontier",
+      "/nonexistent/frontier.json",
+    ])
+    expect(exitCode).toBe(2)
+    expect(stderr).toContain("cannot read")
   })
 
   test("a graph JSON without node_meta exits 2 (stale input surfaced)", async () => {

@@ -52,5 +52,10 @@ ready set.
 
 Every node whose dependencies are all `done` and that is not itself started, blocked, or
 already in progress — the set eligible to start now. The basis for the `orch-next`
-recommender and the (planned) `orch-fanout` executor. A node carrying a `blocked` [[Manual
+recommender and the `orch-fanout` executor. A node carrying a `blocked` [[Manual
 status pin]] is excluded regardless of its dependencies.
+
+**Fan-out eligibility is narrower than the frontier.** An autonomous executor may only drive
+a strict subset of ready nodes: non-`work` stages (no file footprint) and `no_pr` nodes
+(manual completion, no PR) are excluded from fan-out even when ready — they are driven by
+hand. Being on the frontier means "could start," not "safe to drive unattended."

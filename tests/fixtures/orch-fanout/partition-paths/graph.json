@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "node_meta": {
+    "nP1": {"stage": "work", "no_pr": false, "files": [["a.py", "create"]]},
+    "nP2": {"stage": "work", "no_pr": false, "files": [["./a.py", "modify"]]},
+    "nP3": {"stage": "work", "no_pr": false, "files": [["dir/../a.py", "create"]]},
+    "nP4": {"stage": "work", "no_pr": false, "files": [["b.py", "create"]]},
+    "nP5": {"stage": "work", "no_pr": false, "files": [["c.py", "create"]]}
+  }
+}
