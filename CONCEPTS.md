@@ -59,3 +59,11 @@ status pin]] is excluded regardless of its dependencies.
 a strict subset of ready nodes: non-`work` stages (no file footprint) and `no_pr` nodes
 (manual completion, no PR) are excluded from fan-out even when ready — they are driven by
 hand. Being on the frontier means "could start," not "safe to drive unattended."
+
+## Fan-out batch
+
+A set of fan-out-eligible nodes (see [[Ready frontier]]) that can run in parallel worktrees
+at once because no two of them touch the same file — the unit `orch-fanout` dispatches as
+concurrent `/lfg` jobs. Bounded in size by the delegation crossover (beyond which fan-out
+stops paying off) and ordered by critical-path leverage. The collision-free property is by
+**normalized** file path: two nodes editing one file in different spellings still collide.
