@@ -379,7 +379,7 @@ def main(argv):
             i: {
                 "stage": nodes_by_id[i].get("stage"),
                 "no_pr": nodes_by_id[i].get("no_pr", "").lower() == "true",
-                "files": [[p, m] for p, m in node_meta[i]["files"]],
+                "files": [[p, m] for p, m in node_meta[i].get("files", [])],
             }
             for i in ids
         },

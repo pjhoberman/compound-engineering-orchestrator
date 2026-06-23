@@ -23,17 +23,25 @@ import sys
 DEFAULT_MAX_BATCH = 5
 
 
+def fail(msg):
+    sys.stderr.write(f"partition.py: {msg}\n")
+    sys.exit(2)
+
+
 def load(path):
     try:
         with open(path, encoding="utf-8") as fh:
             return json.load(fh)
     except (OSError, json.JSONDecodeError) as exc:
-        sys.stderr.write(f"partition.py: cannot read {path}: {exc}\n")
-        sys.exit(2)
+        fail(f"cannot read {path}: {exc}")
 
 
 def partition(graph, frontier, max_batch):
-    node_meta = graph.get("node_meta", {})
+    if "node_meta" not in graph:
+        # graph_compute predating the node_meta field would silently yield 0 eligible —
+        # surface the stale input instead of partitioning into nothing.
+        fail("graph JSON has no 'node_meta' — re-run graph_compute.py")
+    node_meta = graph["node_meta"]
     ready = frontier.get("ready", [])
 
     # rank by critical-path leverage: lowest slack first, then most unblocks, then id —
@@ -59,7 +67,15 @@ def partition(graph, frontier, max_batch):
                 "reason": f"stage {stage!r} is not fan-out eligible (no file footprint) — drive it directly",
             })
             continue
-        paths = frozenset(f[0] for f in meta.get("files", []))
+        if meta.get("no_pr"):
+            # a no_pr node is a manual-completion ops step that produces no PR — driving it
+            # via /lfg would be wrong, so it is never fanned out.
+            excluded.append({
+                "id": nid,
+                "reason": "no_pr ops node — requires manual completion, not fan-out",
+            })
+            continue
+        paths = frozenset(f[0] for f in meta.get("files", []) if isinstance(f, (list, tuple)) and f)
         eligible.append((nid, paths))
 
     # greedy first-fit packing: a node joins the first batch it doesn't collide with and that
@@ -93,8 +109,7 @@ def main(argv):
                         help=f"max nodes per parallel batch (default {DEFAULT_MAX_BATCH})")
     args = parser.parse_args(argv[1:])  # argparse exits 2 on usage error
     if args.max_batch < 1:
-        sys.stderr.write("partition.py: --max-batch must be >= 1\n")
-        sys.exit(2)
+        fail("--max-batch must be >= 1")
 
     result = partition(load(args.graph), load(args.frontier), args.max_batch)
     print(json.dumps(result, indent=2))

@@ -88,6 +88,9 @@ describe("graph_compute.py", () => {
     expect(exitCode).toBe(1)
     expect(kinds(result)).toContain("cycle")
     expect(result.critical_path).toHaveLength(0)
+    // node_meta is emitted unconditionally, even when a cycle short-circuits scheduling
+    expect(result.node_meta).toBeDefined()
+    expect(Object.keys(result.node_meta).length).toBe(result.node_count)
   })
 
   test("missing dependency: modify of a created file with no edge is flagged", async () => {

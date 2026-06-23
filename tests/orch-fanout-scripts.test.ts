@@ -226,6 +226,60 @@ describe("partition.py", () => {
     expect(JSON.stringify(a.result)).toBe(JSON.stringify(b.result))
   })
 
+  async function partitionIn(dir: string) {
+    const d = path.join(FIXTURES_DIR, dir)
+    const { stdout, exitCode } = await runScript("partition.py", [
+      "--graph",
+      path.join(d, "graph.json"),
+      "--frontier",
+      path.join(d, "frontier.json"),
+    ])
+    return { result: JSON.parse(stdout), exitCode }
+  }
+
+  test("excludes no_pr ops nodes and nodes absent from node_meta; batches an empty-footprint work node", async () => {
+    const { result } = await partitionIn("partition-edge")
+    const ex = Object.fromEntries(result.excluded.map((e: any) => [e.id, e.reason]))
+    expect(ex.nE2).toContain("no_pr") // work but no_pr -> not fan-out eligible
+    expect(ex.nE4).toBeDefined() // absent from node_meta -> excluded, not silently dropped
+    expect(result.eligible_count).toBe(2) // nE1, nE3
+    // nE3 has an empty footprint -> collides with nothing -> batched, not excluded
+    expect(batchOf(result, "nE3")).toBeDefined()
+    expect(batchOf(result, "nE3")).toContain("nE1")
+  })
+
+  test("empty ready set yields empty batches and excluded, zero counts", async () => {
+    const { result, exitCode } = await partitionIn("partition-empty")
+    expect(exitCode).toBe(0)
+    expect(result.batches).toEqual([])
+    expect(result.excluded).toEqual([])
+    expect(result.eligible_count).toBe(0)
+    expect(result.batch_count).toBe(0)
+  })
+
+  test("a missing --graph file exits 2 with a message, not a traceback", async () => {
+    const { exitCode, stderr } = await runScript("partition.py", [
+      "--graph",
+      "/nonexistent/graph.json",
+      "--frontier",
+      path.join(PART, "frontier.json"),
+    ])
+    expect(exitCode).toBe(2)
+    expect(stderr).toContain("cannot read")
+    expect(stderr).not.toContain("Traceback")
+  })
+
+  test("a graph JSON without node_meta exits 2 (stale input surfaced)", async () => {
+    const { exitCode, stderr } = await runScript("partition.py", [
+      "--graph",
+      path.join(FIXTURES_DIR, "partition-no-meta", "graph.json"),
+      "--frontier",
+      path.join(PART, "frontier.json"),
+    ])
+    expect(exitCode).toBe(2)
+    expect(stderr).toContain("node_meta")
+  })
+
   test("usage error: missing required args exits 2", async () => {
     const { exitCode } = await runScript("partition.py", [])
     expect(exitCode).toBe(2)

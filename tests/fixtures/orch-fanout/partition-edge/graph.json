@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "node_meta": {
+    "nE1": {"stage": "work", "no_pr": false, "files": [["x.py", "create"]]},
+    "nE2": {"stage": "work", "no_pr": true, "files": [["y.py", "create"]]},
+    "nE3": {"stage": "work", "no_pr": false, "files": []}
+  }
+}
