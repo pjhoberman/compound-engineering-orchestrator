@@ -42,6 +42,15 @@ describe("graph_compute.py", () => {
     expect(result.node_count).toBe(6)
   })
 
+  test("valid graph: emits dependency edges for downstream consumers (orch-next)", async () => {
+    const { result } = await compute("valid")
+    expect(result.edges).toBeDefined()
+    expect(Object.keys(result.edges).length).toBe(result.node_count)
+    // critical path runs n1 -> n2 -> ..., so n2 depends on n1
+    expect(result.edges.n2).toContain("n1")
+    expect(result.edges.n1).toEqual([])
+  })
+
   test("valid graph: detects a multi-root forest", async () => {
     const { result } = await compute("valid")
     expect(result.is_forest).toBe(true)

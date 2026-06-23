@@ -374,6 +374,7 @@ def main(argv):
         "roots": roots,
         "is_forest": len(roots) > 1,
         "critical_path": chain,
+        "edges": deps,
         "dependency_checks": dep_check,
         "per_node": per_node,
         "findings": findings,
