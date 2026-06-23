@@ -93,6 +93,11 @@ FILES_BULLET = re.compile(r"^\s*-\s*`([^`]+)`\s*\((create|modify)\)", re.IGNOREC
 FIELD_LINE = re.compile(r"^\*\*([A-Za-z][A-Za-z ]*):\*\*")
 
 
+def is_no_pr(node):
+    """The node's no_pr column ('true' / '') coerced to bool — the canonical reading."""
+    return str(node.get("no_pr", "")).lower() == "true"
+
+
 def parse_node_file(node_path):
     """Return {'files': [(path, marker)], 'mirror': bool} for a node markdown file.
 
@@ -230,7 +235,7 @@ def granularity_audit(nodes_by_id, deps, node_meta):
     findings = []
 
     work_ids = [i for i, n in nodes_by_id.items()
-                if n.get("stage") == "work" and n.get("no_pr", "").lower() != "true"]
+                if n.get("stage") == "work" and not is_no_pr(n)]
 
     # map each created file -> creating node
     creators = {}
@@ -350,7 +355,7 @@ def main(argv):
     dep_check = {}
     for i in ids:
         n = nodes_by_id[i]
-        if n.get("no_pr", "").lower() == "true":
+        if is_no_pr(n):
             dep_check[i] = "skipped (no_pr ops node)"
         elif n.get("stage") != "work":
             dep_check[i] = "skipped (no file list — brief stage)"
@@ -375,6 +380,14 @@ def main(argv):
         "is_forest": len(roots) > 1,
         "critical_path": chain,
         "edges": deps,
+        "node_meta": {
+            i: {
+                "stage": nodes_by_id[i].get("stage"),
+                "no_pr": is_no_pr(nodes_by_id[i]),
+                "files": [[p, m] for p, m in node_meta[i].get("files", [])],
+            }
+            for i in ids
+        },
         "dependency_checks": dep_check,
         "per_node": per_node,
         "findings": findings,

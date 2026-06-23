@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "node_meta": {
+    "n1": {"stage": "work", "no_pr": false, "files": [["a.py", "create"], ["b.py", "modify"]]},
+    "n2": {"stage": "work", "no_pr": false, "files": [["c.py", "create"]]},
+    "n3": {"stage": "work", "no_pr": false, "files": [["a.py", "modify"]]},
+    "n4": {"stage": "plan", "no_pr": false, "files": []},
+    "n5": {"stage": "work", "no_pr": false, "files": [["d.py", "create"]]},
+    "n6": {"stage": "brainstorm", "no_pr": false, "files": []}
+  }
+}
