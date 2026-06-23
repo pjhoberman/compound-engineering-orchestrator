@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "project": "demo",
+  "run_id": "r1",
+  "base_commit": "abc1234",
+  "wave": 3,
+  "updated_at": "2026-06-23T14:00:00Z",
+  "tasks": [
+    {"id": "n1", "status": "in-progress", "worktree": "/wt/n1", "branch": "n1/a"},
+    {"id": "n2", "status": "in-review", "worktree": "/wt/n2", "branch": "n2/b", "pr": {"open": true, "number": 5, "url": "u"}},
+    {"id": "n3", "status": "in-review", "worktree": "/wt/n3", "branch": "n3/c", "pr": {"number": 6, "url": "u"}},
+    {"id": "n4", "status": "in-progress", "worktree": "/wt/n4", "branch": "n4/d"},
+    {"id": "n5", "status": "done", "worktree": "/wt/n5", "branch": "n5/e"},
+    {"id": "n6", "status": "failed", "worktree": "/wt/n6", "branch": "n6/f"},
+    {"id": "n7", "status": "in-progress", "worktree": "/wt/n7", "branch": "n7/g"},
+    {"id": "n8", "status": "abandoned", "worktree": null, "branch": null},
+    {"id": "n9", "status": "in-progress", "worktree": "/wt/n9", "branch": "n9/i", "pr": {"number": 9, "url": "u"}}
+  ]
+}
