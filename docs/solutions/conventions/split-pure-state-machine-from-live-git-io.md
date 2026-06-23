@@ -63,11 +63,29 @@ known-merged branch, a known-in-flight branch, and a missing worktree, and eyeba
 output), and keep its logic a thin, readable mapping from git output to fact — not where
 subtle decisions live.
 
+### Variant: the orchestrator owns the state, the script is a stateless oracle
+
+Sometimes there is no real-mode gatherer at all — the orchestrator (e.g. the `orch-fanout`
+executor) already holds the running state and the script is a pure policy oracle it consults
+**incrementally**. `circuit_breaker.py` is consulted after every wave with the *growing* list
+of `pass`/`fail` outcomes; it must therefore **re-derive its answer from the full input each
+call and hold no state between calls** — the executor owns accumulation, the script owns only
+the policy decision.
+
+This makes a usage *contract* load-bearing: the breaker reports the *trailing* failure streak,
+which is correct only because the executor halts on a trip and never feeds it post-trip
+history. Document that contract in the script, and don't switch a trailing-streak reading to a
+max-streak reading (or add hidden state) without revisiting it. The stateless-by-design shape
+is the point: it keeps the oracle trivially deterministic and testable by injected input,
+exactly like the `--facts` half above.
+
 ## When to Apply
 
 - Any new script that branches on live git/`gh` (or any external) state.
 - When mirroring `reorient.py` / `reconcile.py` — keep the same three-part shape and the
   manual-verification note.
+- When a script is an incrementally-consulted policy oracle (the orchestrator owns state) —
+  keep it stateless, re-derive from full input each call, and document the consult contract.
 
 ## Examples
 
