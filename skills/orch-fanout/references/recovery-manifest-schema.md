@@ -74,6 +74,26 @@ place, so a crash mid-write leaves the previous manifest intact rather than a tr
 | `pr` | no | `{open, number, url}` when a PR exists; `null` / omitted otherwise. |
 | `last_clean_merge` | no | Commit SHA of the last successful dependency-order merge; `null` otherwise. |
 
+## Reconciler output (`reconcile.py`)
+
+The reconciler reads this manifest plus live git/`gh` and emits a resume report. Its
+per-task `reconciled_status` is a distinct, slightly larger vocabulary than the manifest's
+own `status` enum:
+
+| reconciled_status | Meaning |
+|-------------------|---------|
+| `done` | The work landed — manifest said `done`, or an in-flight task's branch/PR merged. |
+| `in-review` | An in-flight task with an open PR — awaiting review. |
+| `in-progress` | An in-flight task with a live worktree — resume it. |
+| `interrupted` | An in-flight task whose worktree is gone — re-dispatch from `base_commit`. |
+| `failed` | Manifest recorded a failure — needs attention. |
+| `abandoned` | Manifest recorded a deliberate abandonment — skip. |
+
+**Terminal manifest states are authoritative.** A `done` / `failed` / `abandoned` task is
+reported as-is and is **not** overridden by a git-derived merge — the same principle as a
+manual status pin. The git-authoritative merge override applies only to *in-flight*
+manifest states (`in-progress`, `in-review`).
+
 ## Determinism
 
 `manifest.py` sorts `tasks` by `id` and emits stable key order, so an unchanged run-state

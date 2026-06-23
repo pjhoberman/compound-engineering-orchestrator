@@ -102,15 +102,29 @@ describe("reconcile.py", () => {
     expect(s.n2).toBe("in-review") // PR open
     expect(s.n4).toBe("interrupted") // worktree gone
     expect(s.n5).toBe("done") // manifest done
-    expect(s.n6).toBe("failed") // last run failed
     expect(s.n8).toBe("abandoned") // explicitly abandoned
   })
 
-  test("git is authoritative: a merged PR or branch overrides the manifest's in-flight status", async () => {
+  test("git is authoritative for in-flight tasks: a merged PR or branch -> done", async () => {
     const { result } = await reconcile()
     const s = Object.fromEntries(result.tasks.map((t: any) => [t.id, t.reconciled_status]))
-    expect(s.n3).toBe("done") // manifest said in-review, but the PR merged
-    expect(s.n7).toBe("done") // manifest said in-progress, but the branch merged
+    expect(s.n3).toBe("done") // manifest in-review, but the PR merged
+    expect(s.n7).toBe("done") // manifest in-progress, but the branch merged
+  })
+
+  test("terminal manifest status is NOT overridden by a merged branch", async () => {
+    // n6 is failed AND its branch merged (facts branch_merged:true) -> stays failed,
+    // because terminal manifest states are deliberate records git must not silently flip.
+    const { result } = await reconcile()
+    const s = Object.fromEntries(result.tasks.map((t: any) => [t.id, t.reconciled_status]))
+    expect(s.n6).toBe("failed")
+  })
+
+  test("a closed (unmerged) PR with a live worktree falls through to in-progress", async () => {
+    // n9: pr_state 'closed' is neither merged nor open -> resume the worktree.
+    const { result } = await reconcile()
+    const s = Object.fromEntries(result.tasks.map((t: any) => [t.id, t.reconciled_status]))
+    expect(s.n9).toBe("in-progress")
   })
 
   test("interrupted task carries a concrete re-dispatch action", async () => {
@@ -121,7 +135,17 @@ describe("reconcile.py", () => {
 
   test("resume list names exactly the tasks needing action, sorted", async () => {
     const { result } = await reconcile()
-    expect(result.resume).toEqual(["n1", "n2", "n4", "n6"])
+    expect(result.resume).toEqual(["n1", "n2", "n4", "n6", "n9"])
+  })
+
+  test("a missing manifest file exits 2 with a message, not a traceback", async () => {
+    const { exitCode, stderr } = await runScript("reconcile.py", [
+      "--manifest",
+      "/nonexistent/recovery.json",
+    ])
+    expect(exitCode).toBe(2)
+    expect(stderr).toContain("cannot read")
+    expect(stderr).not.toContain("Traceback")
   })
 
   test("determinism: identical output across runs", async () => {

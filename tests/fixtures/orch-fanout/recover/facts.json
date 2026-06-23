@@ -1,10 +1,11 @@
 {
-  "n1": {"worktree_exists": true, "branch_exists": true, "pr_state": null},
-  "n2": {"worktree_exists": true, "branch_exists": true, "pr_state": "open"},
-  "n3": {"worktree_exists": true, "branch_exists": true, "pr_state": "merged"},
-  "n4": {"worktree_exists": false, "branch_exists": true, "pr_state": null},
-  "n5": {"worktree_exists": true, "branch_exists": true, "pr_state": null},
-  "n6": {"worktree_exists": true, "branch_exists": true, "pr_state": null},
-  "n7": {"worktree_exists": true, "branch_exists": true, "branch_merged": true},
-  "n8": {}
+  "n1": {"worktree_exists": true, "pr_state": null},
+  "n2": {"worktree_exists": true, "pr_state": "open"},
+  "n3": {"worktree_exists": true, "pr_state": "merged"},
+  "n4": {"worktree_exists": false, "pr_state": null},
+  "n5": {"worktree_exists": true, "pr_state": null},
+  "n6": {"worktree_exists": true, "branch_merged": true, "pr_state": null},
+  "n7": {"worktree_exists": true, "branch_merged": true},
+  "n8": {},
+  "n9": {"worktree_exists": true, "pr_state": "closed"}
 }

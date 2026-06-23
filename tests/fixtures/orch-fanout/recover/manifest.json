@@ -13,6 +13,7 @@
     {"id": "n5", "status": "done", "worktree": "/wt/n5", "branch": "n5/e"},
     {"id": "n6", "status": "failed", "worktree": "/wt/n6", "branch": "n6/f"},
     {"id": "n7", "status": "in-progress", "worktree": "/wt/n7", "branch": "n7/g"},
-    {"id": "n8", "status": "abandoned", "worktree": null, "branch": null}
+    {"id": "n8", "status": "abandoned", "worktree": null, "branch": null},
+    {"id": "n9", "status": "in-progress", "worktree": "/wt/n9", "branch": "n9/i", "pr": {"number": 9, "url": "u"}}
   ]
 }
