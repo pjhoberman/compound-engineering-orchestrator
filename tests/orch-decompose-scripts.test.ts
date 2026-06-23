@@ -40,6 +40,22 @@ describe("graph_compute.py", () => {
     expect(result.edges.n1).toEqual([])
   })
 
+  test("valid graph: emits node_meta (stage/no_pr/files) for downstream consumers (orch-fanout)", async () => {
+    const { result } = await compute("valid")
+    expect(result.node_meta).toBeDefined()
+    expect(Object.keys(result.node_meta).length).toBe(result.node_count)
+    for (const id of Object.keys(result.node_meta)) {
+      const m = result.node_meta[id]
+      expect(m).toHaveProperty("stage")
+      expect(m).toHaveProperty("no_pr")
+      expect(Array.isArray(m.files)).toBe(true)
+    }
+    // at least one work node exposes a parsed file footprint (path + create/modify marker)
+    const withFiles = Object.values(result.node_meta).filter((m: any) => m.files.length > 0)
+    expect(withFiles.length).toBeGreaterThan(0)
+    expect((withFiles[0] as any).files[0]).toHaveLength(2)
+  })
+
   test("valid graph: detects a multi-root forest", async () => {
     const { result } = await compute("valid")
     expect(result.is_forest).toBe(true)

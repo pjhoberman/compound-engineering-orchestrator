@@ -375,6 +375,14 @@ def main(argv):
         "is_forest": len(roots) > 1,
         "critical_path": chain,
         "edges": deps,
+        "node_meta": {
+            i: {
+                "stage": nodes_by_id[i].get("stage"),
+                "no_pr": nodes_by_id[i].get("no_pr", "").lower() == "true",
+                "files": [[p, m] for p, m in node_meta[i]["files"]],
+            }
+            for i in ids
+        },
         "dependency_checks": dep_check,
         "per_node": per_node,
         "findings": findings,

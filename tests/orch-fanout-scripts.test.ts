@@ -159,3 +159,75 @@ describe("reconcile.py", () => {
     expect(exitCode).toBe(2)
   })
 })
+
+describe("partition.py", () => {
+  const PART = path.join(FIXTURES_DIR, "partition")
+
+  async function partition(extra: string[] = []) {
+    const { stdout, exitCode } = await runScript("partition.py", [
+      "--graph",
+      path.join(PART, "graph.json"),
+      "--frontier",
+      path.join(PART, "frontier.json"),
+      ...extra,
+    ])
+    return { result: JSON.parse(stdout), exitCode }
+  }
+
+  function batchOf(result: any, id: string): string[] | undefined {
+    return result.batches.find((b: string[]) => b.includes(id))
+  }
+
+  test("excludes non-work ready nodes with a reason, never silently drops them", async () => {
+    const { result, exitCode } = await partition()
+    expect(exitCode).toBe(0)
+    const ex = Object.fromEntries(result.excluded.map((e: any) => [e.id, e.reason]))
+    expect(Object.keys(ex).sort()).toEqual(["n4", "n6"]) // plan + brainstorm
+    expect(ex.n4).toContain("plan")
+    expect(ex.n6).toContain("brainstorm")
+    expect(result.eligible_count).toBe(4) // n1, n2, n3, n5
+  })
+
+  test("packs collision-free nodes together and splits colliding ones", async () => {
+    const { result } = await partition()
+    // n1 touches a.py; n3 also touches a.py -> must be in different batches
+    expect(batchOf(result, "n1")).not.toContain("n3")
+    // n2 (c.py) and n5 (d.py) don't collide with n1 (a.py/b.py) -> share its batch
+    expect(batchOf(result, "n1")).toContain("n2")
+    expect(batchOf(result, "n1")).toContain("n5")
+  })
+
+  test("ranks by leverage: the highest-leverage node leads the first batch", async () => {
+    const { result } = await partition()
+    expect(result.batches[0][0]).toBe("n1") // slack 0, unblocks 2
+  })
+
+  test("respects --max-batch", async () => {
+    const { result } = await partition(["--max-batch", "2"])
+    for (const b of result.batches) expect(b.length).toBeLessThanOrEqual(2)
+  })
+
+  test("--max-batch < 1 is a usage error (exit 2)", async () => {
+    const { exitCode, stderr } = await runScript("partition.py", [
+      "--graph",
+      path.join(PART, "graph.json"),
+      "--frontier",
+      path.join(PART, "frontier.json"),
+      "--max-batch",
+      "0",
+    ])
+    expect(exitCode).toBe(2)
+    expect(stderr).toContain("max-batch")
+  })
+
+  test("determinism: identical output across runs", async () => {
+    const a = await partition()
+    const b = await partition()
+    expect(JSON.stringify(a.result)).toBe(JSON.stringify(b.result))
+  })
+
+  test("usage error: missing required args exits 2", async () => {
+    const { exitCode } = await runScript("partition.py", [])
+    expect(exitCode).toBe(2)
+  })
+})
