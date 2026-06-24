@@ -29,6 +29,7 @@ compose CE skills (`ce-plan`, `ce-brainstorm`, `ce-work`, `lfg`), never reimplem
 ## Conventions
 
 - **Task-graph vocabulary** is defined in `CONCEPTS.md`. Use those terms precisely.
+- **Render node/unit IDs with their title** in human-facing output — `n7 (CO canopy data load)`, never bare `n7` — in PRs, commits, comments, and skill previews/recommendations/handoffs. Bare IDs are for the scripts' JSON only. See `docs/solutions/conventions/render-node-ids-with-titles.md`.
 - **`docs/solutions/`** — documented solutions to past problems (bugs, conventions, workflow learnings), organized by category with YAML frontmatter (`module`, `tags`, `problem_type`). Relevant when implementing or debugging in documented areas.
 - **Scripts are stdlib Python**, resolved at runtime via `CLAUDE_SKILL_DIR`. Off-platform
   invocations must report unavailability explicitly rather than degrade.

@@ -43,10 +43,10 @@ If the guard's `else` branch fired, say so plainly and stop. If `graph_compute.p
 
 ## Phase 3: Visible preview (non-negotiable)
 
-Present the wave plan before spawning anything. For each wave, in order, show:
+Present the wave plan before spawning anything. **Render every node as `id (title)`, never a bare ID** (the title is the `title` column in `index.md`) — a human reviewing the preview won't recall what `n7` is, but `n7 (CO canopy data load)` is self-explanatory. Bare IDs are for the scripts' JSON only. For each wave, in order, show:
 
-- **Parallel wave:** the node ids, their target worktrees, the model each will run on (mapped from the node's `model` tier in `node_meta` — see Phase 4), and the reason they're safe together (file-disjoint + runtime-independent).
-- **Solo wave:** the single node id, its model, and why it is alone (`exclusive_runtime` — needs a non-shareable server/DB/port/singleton).
+- **Parallel wave:** each node as `id (title)`, its target worktree, the model it will run on (mapped from the node's `model` tier in `node_meta` — see Phase 4), and the reason they're safe together (file-disjoint + runtime-independent).
+- **Solo wave:** the single node as `id (title)`, its model, and why it is alone (`exclusive_runtime` — needs a non-shareable server/DB/port/singleton).
 
 Also restate which ready nodes were **excluded** from fan-out entirely (from Phase 2) and that they must be driven by hand. This preview is the user's gate: a node that should have been `exclusive_runtime` but wasn't is visible here as a member of a parallel wave — the user can stop and re-flag it before any run starts.
 

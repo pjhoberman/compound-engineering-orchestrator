@@ -85,11 +85,13 @@ fi
 
 Present each node's derived `status` and `annotation` from the JSON — honoring manual pins, showing `no_pr` nodes as awaiting manual completion, and rendering the "merged, awaiting activation by `nX`" annotation next to any `done` node that still has a pending activator. Do not recompute status.
 
+**Always render a node as `id (title)`, never a bare ID** (the title is the `title` column in `index.md`) — in the status table, annotations, and handoff. A human won't recall what `n3` means; `n3 (RouteFeatures sidecar)` is self-explanatory. Bare IDs are for the scripts' JSON only.
+
 **Staleness check before driving a `work` node.** When the user picks a `work` node to drive, compare its `base_commit` against current HEAD. If HEAD has advanced (especially if upstream nodes have merged since the plan was authored), warn that the embedded plan may be stale and offer to re-plan the node (route to `ce-plan`) rather than drive it directly. A fresh `base_commit` means no warning.
 
 **Handoff menu.** Offer the next move using the platform's blocking question tool (load `AskUserQuestion` via `ToolSearch` `select:AskUserQuestion` first on Claude Code if needed). Keep labels self-contained and third-person. Typical options:
 
-1. **Drive the first ready node (`nX`)** — start the highest-priority node whose dependencies are all `done`.
+1. **Drive the first ready node (`nX — <title>`)** — start the highest-priority node whose dependencies are all `done`.
 2. **Drive a different ready node** — let the user name which.
 3. **Stop — the graph is written** — end without driving anything.
 
