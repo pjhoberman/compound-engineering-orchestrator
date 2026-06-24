@@ -47,6 +47,7 @@ describe("graph_compute.py", () => {
     for (const id of Object.keys(result.node_meta)) {
       const m = result.node_meta[id]
       expect(m).toHaveProperty("stage")
+      expect(m).toHaveProperty("model") // model tier, so orch-fanout can run each node on its tier
       expect(m).toHaveProperty("no_pr")
       expect(typeof m.exclusive_runtime).toBe("boolean") // runtime-exclusivity signal for orch-fanout
       expect(Array.isArray(m.files)).toBe(true)
@@ -57,12 +58,24 @@ describe("graph_compute.py", () => {
     const withFiles = Object.values(result.node_meta).filter((m: any) => m.files.length > 0)
     expect(withFiles.length).toBeGreaterThan(0)
     expect((withFiles[0] as any).files[0]).toHaveLength(2)
+    // model tier is carried verbatim, not defaulted — n3 is `ceiling` in the valid fixture
+    expect(result.node_meta.n3.model).toBe("ceiling")
+    expect(result.node_meta.n1.model).toBe("generation")
   })
 
   test("node_meta reflects a declared exclusive_runtime column (true vs default false)", async () => {
     const { result } = await compute("exclusive-runtime")
     expect(result.node_meta.n1.exclusive_runtime).toBe(true) // index column 'true'
     expect(result.node_meta.n2.exclusive_runtime).toBe(false) // column blank -> false
+    // model tier is carried through verbatim from the index for orch-fanout to consume
+    expect(result.node_meta.n1.model).toBe("generation")
+    expect(result.node_meta.n2.model).toBe("generation")
+  })
+
+  test("an unrecognized model tier is flagged as invalid_model (correctness, exit 1)", async () => {
+    const { result, exitCode } = await compute("invalid-model")
+    expect(exitCode).toBe(1)
+    expect(kinds(result)).toContain("invalid_model")
   })
 
   test("valid graph: detects a multi-root forest", async () => {

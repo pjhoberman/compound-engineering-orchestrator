@@ -31,7 +31,9 @@ The stage tag defers per-node depth downstream instead of interrogating every no
 
 The recommended (human-overridable) model for a node: `generation` for well-specified
 mechanical work, `ceiling` for cross-cutting or architectural judgment. Nudges toward
-`ceiling` for security- or credential-sensitive surfaces.
+`ceiling` for security- or credential-sensitive surfaces. At execution time `orch-fanout`
+resolves the tier to a concrete model per fanned-out run — `ceiling` → the session's top
+model, `generation` → the platform's mid-tier model — so a single [[Wave]] can mix tiers.
 
 ## `no_pr` node
 
