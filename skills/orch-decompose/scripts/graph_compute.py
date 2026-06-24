@@ -23,6 +23,7 @@ import sys
 
 LIST_COLUMNS = {"depends_on", "pr_refs"}
 VALID_STAGES = {"brainstorm", "plan", "work"}
+VALID_MODELS = {"generation", "ceiling"}
 
 
 def fail(msg):
@@ -327,6 +328,9 @@ def main(argv):
         if n.get("stage") and n["stage"] not in VALID_STAGES:
             findings.append({"kind": "invalid_stage", "severity": "correctness", "node": nid,
                              "detail": f"{nid} has stage '{n['stage']}' (expected one of {sorted(VALID_STAGES)})"})
+        if n.get("model") and n["model"] not in VALID_MODELS:
+            findings.append({"kind": "invalid_model", "severity": "correctness", "node": nid,
+                             "detail": f"{nid} has model '{n['model']}' (expected one of {sorted(VALID_MODELS)})"})
 
     ids = list(nodes_by_id.keys())
     deps = {i: [d for d in nodes_by_id[i].get("depends_on", [])] for i in ids}
@@ -392,6 +396,7 @@ def main(argv):
         "node_meta": {
             i: {
                 "stage": nodes_by_id[i].get("stage"),
+                "model": nodes_by_id[i].get("model"),
                 "no_pr": is_no_pr(nodes_by_id[i]),
                 "exclusive_runtime": is_exclusive_runtime(nodes_by_id[i]),
                 "files": [[p, m] for p, m in node_meta[i].get("files", [])],

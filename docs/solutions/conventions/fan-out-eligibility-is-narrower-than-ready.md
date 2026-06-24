@@ -49,8 +49,10 @@ Conflating "ready" with "drivable" is how an autonomous executor does something 
 or nonsensical — running an unattended code pipeline on a node whose value is a manual data
 load or activation. The exclusion must be **visible** (report excluded nodes with reasons),
 so the human sees what the executor declined to touch rather than silently getting a
-short batch. The producer (`graph_compute`) already exposes the `stage` and `no_pr` signals
-in `node_meta`; the executor's job is to *honor* them, not re-derive them.
+short batch. The producer (`graph_compute`) already exposes the `stage`, `no_pr`, and `model`
+signals in `node_meta`; the executor's job is to *honor* them, not re-derive them — e.g. the
+`model` tier is propagated through `node_meta` so the executor runs each node on its own tier
+rather than re-reading the index (a third instance of this same producer-exposes / consumer-honors shape).
 
 ## When to Apply
 

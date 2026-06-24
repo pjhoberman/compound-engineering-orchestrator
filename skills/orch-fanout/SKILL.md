@@ -45,8 +45,8 @@ If the guard's `else` branch fired, say so plainly and stop. If `graph_compute.p
 
 Present the wave plan before spawning anything. For each wave, in order, show:
 
-- **Parallel wave:** the node ids, their target worktrees, the model tier each will run on, and the reason they're safe together (file-disjoint + runtime-independent).
-- **Solo wave:** the single node id and why it is alone (`exclusive_runtime` — needs a non-shareable server/DB/port/singleton).
+- **Parallel wave:** the node ids, their target worktrees, the model each will run on (mapped from the node's `model` tier in `node_meta` — see Phase 4), and the reason they're safe together (file-disjoint + runtime-independent).
+- **Solo wave:** the single node id, its model, and why it is alone (`exclusive_runtime` — needs a non-shareable server/DB/port/singleton).
 
 Also restate which ready nodes were **excluded** from fan-out entirely (from Phase 2) and that they must be driven by hand. This preview is the user's gate: a node that should have been `exclusive_runtime` but wasn't is visible here as a member of a parallel wave — the user can stop and re-flag it before any run starts.
 
@@ -62,6 +62,8 @@ On confirm, for the wave:
 
 - **Parallel wave:** spawn one worktree-isolated `/lfg` run per node, reusing `ce-work`'s worktree creation, pre-dispatch file-collision check, and dependency-order merge (abort + re-dispatch on conflict). Run them concurrently.
 - **Solo wave:** run the single node's `/lfg` to completion before anything else — never concurrent with another run.
+
+**Per-run model.** Each node carries a `model` tier in `node_meta` (`generation` | `ceiling`, stamped by `orch-decompose`). Map it to a concrete model for that node's `/lfg` spawn — `ceiling` → the session's top model (inherit), `generation` → the platform's mid-tier model (e.g. `sonnet` in Claude Code) — and pass it as the spawn's model override, the same way `ce-code-review` tiers its persona dispatches. A single parallel wave can therefore run a `ceiling` node on the top model alongside `generation` nodes on the mid tier. A node whose `model` is null, absent, or unrecognized falls back to the session's top model (the safe default — `graph_compute` flags an unrecognized tier as an `invalid_model` finding at decompose time, so this should be rare). The tier is a recommendation: the user can override any node's model at the Phase 3 preview before confirming.
 
 After each wave completes and merges, **write the recovery manifest** via `scripts/manifest.py` (the wave boundary) so a dead or context-compacted session resumes by reading it. On resume, reconstruct state with `scripts/reconcile.py` (git is authoritative; the manifest is a hint) and continue from the first unfinished wave.
 
