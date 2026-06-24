@@ -54,6 +54,8 @@ Rank the `ready` set and pick the single best move:
 
 Present the **one** top-ranked node with a one-line rationale naming the signal that won it (e.g. "on the critical path, unblocks 2"). Name the runner-up only on a genuine tie. Also show, compactly: the count ready / active / blocked / done, and any `active` nodes (work already in flight) so the user sees the whole state in one glance without a triage list.
 
+**Always render a node as `id (title)`, never a bare ID** (the title is the `title` column in `index.md`). A human reading "do `n7`" later has no idea what `n7` is; "do `n7` (CO canopy data load)" is self-explanatory. Bare IDs are for the scripts' JSON only.
+
 Read the recommended node's `stage` and `model` from `index.md` to form the command (Phase 4).
 
 ## Phase 4: Drive the move
@@ -62,7 +64,7 @@ Read the recommended node's `stage` and `model` from `index.md` to form the comm
 
 **Offer the move** using the platform's blocking question tool (load `AskUserQuestion` via `ToolSearch` `select:AskUserQuestion` first on Claude Code if needed):
 
-1. **Drive the recommended node (`nX`)** — run the recommended move.
+1. **Drive the recommended node (`nX — <title>`)** — run the recommended move.
 2. **Drive a different ready node** — let the user name which.
 3. **Stop** — just show the state.
 
