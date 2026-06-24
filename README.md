@@ -19,15 +19,26 @@ The three skills operate over one durable artifact — a committed, diffable **t
 under `docs/plans/<project-slug>/`. Structure lives in git; live status is *derived* from
 git on read, so any session or machine resumes by reading the files.
 
+```mermaid
+flowchart TB
+    P(["project / brainstorm doc"]) --> OD["/orch-decompose<br/>build + audit the task-graph"]
+    OD --> TG[("task-graph<br/>committed in git;<br/>status derived on read")]
+    TG --> ON["/orch-next<br/>ready frontier,<br/>recommend one move"]
+    TG --> OF
+    subgraph OF["/orch-fanout — runtime-safe parallel waves"]
+        direction LR
+        PA["partition:<br/>collision-free batches"] --> WP["wave-plan:<br/>exclusive-runtime<br/>nodes run solo"]
+        WP --> EX["executor:<br/>worktree /lfg per node,<br/>per-node model tier,<br/>dependency-order merge"]
+        EX --> CB["circuit breaker:<br/>halt after K<br/>consecutive fails"]
+    end
+    ON -.->|drive a node| OF
+    OF -.->|recovery manifest per wave| TG
 ```
-/orch-decompose      /orch-next            /orch-fanout
- project ─► task-     read graph ─►         partition ─► wave-plan ─► executor ─► circuit
- graph (index +       recommend the          (collision-   (runtime-    (worktree    breaker
- per-node files,      single highest-        free batches)  safe waves;  /lfg per     (halt after
- stage + model        leverage next                        exclusive    node, dep-   K consecutive
- tags)                move + run it                        nodes solo)  order merge) wave failures)
-                                                                        + recovery manifest per wave
-```
+
+In words: **`/orch-decompose`** builds the committed task-graph → **`/orch-next`** recommends the
+single highest-leverage next move → **`/orch-fanout`** runs it in parallel waves
+(partition → wave-plan → executor → circuit breaker), checkpointing recovery state each wave.
+Every skill reads and writes the one task-graph; nothing holds project state in a chat session.
 
 ## Skills
 
@@ -103,7 +114,7 @@ for the originating ideation, requirements, and plans.
 
 ```bash
 bun install
-bun test                 # 85 script tests (TS harness over the Python scripts)
+bun test                 # 86 script tests (TS harness over the Python scripts)
 bun run plugin:validate  # claude plugin validate
 ```
 
