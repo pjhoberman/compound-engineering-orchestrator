@@ -1,0 +1,8 @@
+{
+  "__base__": "origin/main",
+  "n1": {"upstream": {"n3": {"merged": true, "merge_in_base": false}}},
+  "n2": {"upstream": {"n3": {"merged": true, "merge_in_base": true}}},
+  "n3": {"upstream": {}},
+  "n4": {"upstream": {"n3": {"merged": true, "merge_in_base": false}}},
+  "n5": {"upstream": {"n3": {"merged": true, "merge_in_base": false}}}
+}

@@ -1,0 +1,9 @@
+{
+  "base_branch": "origin/main",
+  "nodes": {
+    "n1": {"status": "not-started", "annotation": null},
+    "n2": {"status": "blocked", "annotation": "manual pin"},
+    "n3": {"status": "in-progress", "annotation": null},
+    "n4": {"status": "not-started", "annotation": null}
+  }
+}

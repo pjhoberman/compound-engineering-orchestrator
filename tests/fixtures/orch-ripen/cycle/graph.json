@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "node_count": 2,
+  "roots": [],
+  "is_forest": false,
+  "critical_path": [],
+  "edges": {
+    "n1": ["n2"],
+    "n2": ["n1"]
+  },
+  "node_meta": {
+    "n1": {"stage": "plan", "model": "generation", "no_pr": false, "exclusive_runtime": false, "base_commit": "", "files": []},
+    "n2": {"stage": "plan", "model": "generation", "no_pr": false, "exclusive_runtime": false, "base_commit": "", "files": []}
+  },
+  "per_node": {},
+  "findings": [
+    {"kind": "cycle", "severity": "correctness", "node": null, "detail": "dependency cycle among: n1, n2"}
+  ],
+  "summary": {"correctness": 1, "advisory": 0}
+}

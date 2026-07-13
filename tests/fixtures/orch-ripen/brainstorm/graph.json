@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "node_count": 3,
+  "roots": ["n1"],
+  "is_forest": false,
+  "critical_path": ["n1", "n2", "n3"],
+  "edges": {
+    "n1": [],
+    "n2": ["n1"],
+    "n3": ["n2"]
+  },
+  "node_meta": {
+    "n1": {"stage": "brainstorm", "model": "ceiling", "no_pr": false, "exclusive_runtime": false, "base_commit": "", "files": []},
+    "n2": {"stage": "plan", "model": "generation", "no_pr": false, "exclusive_runtime": false, "base_commit": "", "files": []},
+    "n3": {"stage": "plan", "model": "generation", "no_pr": false, "exclusive_runtime": false, "base_commit": "", "files": []}
+  },
+  "per_node": {
+    "n1": {"es": 0, "slack": 0, "critical": true},
+    "n2": {"es": 1, "slack": 0, "critical": true},
+    "n3": {"es": 2, "slack": 0, "critical": true}
+  },
+  "findings": [],
+  "summary": {"correctness": 0, "advisory": 0}
+}

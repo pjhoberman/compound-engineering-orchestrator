@@ -65,6 +65,26 @@ Decisions locked at decompose time:
 - **`no_pr` nodes** never derive `in-progress`/`done` from git. Re-orient surfaces them as `not-started (awaiting manual completion)` until a `manual_status` pin is set. orch-decompose writes the pin expectation into the node when it creates one.
 - **`blocked`** is normally a human pin (`manual_status: blocked`).
 
+## Dependency edges: decision readiness vs. execution readiness
+
+The `depends_on` edges are a single set — but two skills read them through **different readiness
+predicates**, and the difference is load-bearing (no schema change; same edges, different meaning
+per stage):
+
+- **Execution readiness** (what `orch-next` and `orch-fanout` schedule on): a node is ready when
+  every dependency's code has **MERGED** (`status: done`). You cannot run `/lfg` on a node whose
+  upstream code isn't on the base branch yet.
+- **Decision readiness** (what `orch-ripen` schedules on): a `plan`-stage node is ready *to plan*
+  when every dependency's **DECISION is settled** — the upstream node's plan is authored and
+  approved (`stage` flipped to `work`) **or** it has merged. Planning a node needs the upstream
+  decisions its plan will build on, not upstream *code*.
+
+So one edge `n101 → n103` is satisfied for **planning** as soon as `n101` flips to `work`, but not
+satisfied for **execution** until `n101` merges. This lets `orch-ripen` fan `ce-plan` over a wave
+of siblings (`n103`/`n104`/`n105`) once their shared decision-parent (`n101`) is planned — long
+before any implementation starts — while `orch-fanout` still waits for merges. The two predicates
+never conflict because they gate different actions (plan vs. drive). See `skills/orch-ripen/`.
+
 ## ID rules
 
 - IDs are `n` followed by an integer: `n1`, `n2`, … `n10`, … . Globally unique within the project.

@@ -18,6 +18,15 @@ compose CE skills (`ce-plan`, `ce-brainstorm`, `ce-work`, `lfg`), never reimplem
 - **`orch-next`** (`skills/orch-next/`) — read the task-graph, compute the ready frontier
   (`scripts/frontier.py`, a pure consumer of graph_compute + reorient JSON), and recommend
   the single highest-leverage next move. Manual-invoke only.
+- **`orch-ripen`** (`skills/orch-ripen/`) — mature plan-stage nodes into work-ready nodes in
+  parallel planning waves. Computes the **planning frontier** (`scripts/ripen_frontier.py`, a
+  pure consumer of graph_compute + reorient JSON) using **decision** readiness (upstream plan
+  approved / stage flipped to `work`), not execution readiness (upstream merged). Fans `ce-plan`
+  over each wave, gates every stage-flip on human approval, writes plans back per
+  `references/stage-flip-writeback.md` (embed plan, flip `plan`→`work`, stamp `base_commit`,
+  serialize the index write to one commit per wave), then re-audits and re-validates staleness
+  (`scripts/staleness.py`, pure state machine + `--facts` per the split convention). Brainstorm
+  nodes are reported, never fanned. Manual-invoke only.
 - **`orch-fanout`** (`skills/orch-fanout/`) — execute ready work in runtime-safe parallel
   waves: partition into collision-free batches, sequence them with `scripts/wave_plan.py`
   (exclusive-runtime nodes run solo), run each node on its own `model` tier (`node_meta`),
@@ -40,6 +49,6 @@ compose CE skills (`ce-plan`, `ce-brainstorm`, `ce-work`, `lfg`), never reimplem
 
 ## Roadmap
 
-Foundation (`orch-decompose`) is in. Next rungs, each on the same task-graph: `orch-next`
-(ready-frontier recommender), `orch-fanout` (parallel worktree `/lfg` executor),
-`orch-tracker-sync` (Linear), and a cross-session recovery manifest. See `docs/`.
+The decompose → ripen → fanout family (with `orch-next` as the single-move advisor, plus the
+cross-session recovery manifest) is in. The one deferred rung, on the same task-graph, is
+`orch-tracker-sync` (Linear as a live two-way coordination bus). See `docs/`.
