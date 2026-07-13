@@ -62,6 +62,27 @@ a strict subset of ready nodes: non-`work` stages (no file footprint) and `no_pr
 (manual completion, no PR) are excluded from fan-out even when ready — they are driven by
 hand. Being on the frontier means "could start," not "safe to drive unattended."
 
+## Decision dependency
+
+A `depends_on` edge read through the **planning** readiness predicate rather than the execution
+one. An **execution** dependency is satisfied when the upstream node's code has *merged*
+(`status: done`) — what [[Ready frontier]] and `orch-fanout` schedule on. A **decision**
+dependency is satisfied when the upstream node's *decision is settled* — its plan is authored and
+approved ([[Stage]] flipped to `work`) or it has merged. Planning a node needs the upstream
+decisions its plan will build on, not upstream code. Same edge, two predicates gating two
+different actions (plan vs. drive); they never conflict. See
+`skills/orch-decompose/references/task-graph-schema.md`.
+
+## Planning frontier
+
+Every `plan`-stage [[Node]] whose every dependency is a settled [[Decision dependency]] (upstream
+plan approved / stage flipped to `work`, or merged) — the set safe to fan `ce-plan` over in one
+`orch-ripen` planning [[Wave]]. Deliberately weaker than the [[Ready frontier]]: a sibling set can
+be planned in parallel as soon as their shared decision-parent is *planned*, long before any code
+merges. `brainstorm`-stage nodes are reported on the frontier but **never fanned** (they are
+interview-shaped and interactive); their downstream plan nodes stay blocked until the brainstorm
+settles. Computed by `scripts/ripen_frontier.py`, a pure consumer of the graph + status JSON.
+
 ## Fan-out batch
 
 A set of fan-out-eligible nodes (see [[Ready frontier]]) that can run in parallel worktrees
@@ -80,10 +101,12 @@ inferred; the [[Fan-out batch]] preview is the safety net for a missed flag.
 
 ## Wave
 
-One step of an `orch-fanout` run: either a parallel [[Fan-out batch]] (file-disjoint,
-runtime-independent nodes run together) or a single [[exclusive_runtime]] node run alone. The
-unit at which the executor checkpoints — the recovery manifest is written at every wave
-boundary, so a dead run resumes from the first unfinished wave.
+One step of a parallel orchestrator run. In `orch-fanout` (an *execution* wave): either a
+parallel [[Fan-out batch]] (file-disjoint, runtime-independent nodes run together) or a single
+[[exclusive_runtime]] node run alone — the unit at which the executor checkpoints, so a dead run
+resumes from the first unfinished wave. In `orch-ripen` (a *planning* wave): the set of
+[[Planning frontier]] nodes fanned through `ce-plan` at once, committed as one index write-back at
+the wave boundary. Both isolate the parallel work and serialize the one shared write.
 
 ## Circuit breaker
 

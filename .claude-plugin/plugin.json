@@ -1,6 +1,6 @@
 {
   "name": "compound-engineering-orchestrator",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Project decomposition and orchestration on top of the compound-engineering plugin. Turns a multi-feature project into a committed, diffable task-graph and drives its nodes through the CE pipeline.",
   "author": {
     "name": "PJ Hoberman",

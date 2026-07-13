@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "node_count": 5,
+  "roots": ["n101"],
+  "is_forest": false,
+  "critical_path": ["n101", "n102", "n103"],
+  "edges": {
+    "n101": [],
+    "n102": ["n101"],
+    "n103": ["n101", "n102"],
+    "n104": ["n101", "n102"],
+    "n105": ["n101", "n102"]
+  },
+  "node_meta": {
+    "n101": {"stage": "work", "model": "ceiling", "no_pr": false, "exclusive_runtime": false, "base_commit": "aaaa111", "files": [["app/segment.rb", "create"]]},
+    "n102": {"stage": "work", "model": "ceiling", "no_pr": false, "exclusive_runtime": false, "base_commit": "bbbb222", "files": [["app/pipeline.rb", "create"]]},
+    "n103": {"stage": "plan", "model": "generation", "no_pr": false, "exclusive_runtime": false, "base_commit": "", "files": []},
+    "n104": {"stage": "plan", "model": "generation", "no_pr": false, "exclusive_runtime": false, "base_commit": "", "files": []},
+    "n105": {"stage": "plan", "model": "generation", "no_pr": false, "exclusive_runtime": false, "base_commit": "", "files": []}
+  },
+  "per_node": {
+    "n101": {"es": 0, "slack": 0, "critical": true},
+    "n102": {"es": 1, "slack": 0, "critical": true},
+    "n103": {"es": 2, "slack": 0, "critical": true},
+    "n104": {"es": 2, "slack": 1, "critical": false},
+    "n105": {"es": 2, "slack": 1, "critical": false}
+  },
+  "findings": [],
+  "summary": {"correctness": 0, "advisory": 0}
+}

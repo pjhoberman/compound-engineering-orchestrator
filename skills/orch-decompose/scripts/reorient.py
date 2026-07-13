@@ -25,6 +25,8 @@ import subprocess
 import sys
 
 LIST_COLUMNS = {"depends_on", "pr_refs"}
+# canonical node-id shape; a value off this shape means a corrupt index row, not a real id
+NODE_ID_RE = re.compile(r"n\d+")
 
 
 def fail(msg):
@@ -157,8 +159,10 @@ def collect_facts(node, base_branch):
             rc, out, _ = _run(["gh", "pr", "view", num, "--json", "state", "-q", ".state"])
             state = out.lower() if rc == 0 and out else "unknown"
             facts["prs"].append({"id": ref, "state": "merged" if state == "merged" else state})
-    else:
-        # anchored-token PR search: [nN] in title
+    elif NODE_ID_RE.fullmatch(nid):
+        # anchored-token PR search: [nN] in title — guarded so a corrupt id is never embedded
+        # in gh's search syntax (it could match unintended PRs); a malformed id simply falls
+        # through to branch detection instead.
         rc, out, _ = _run(["gh", "pr", "list", "--search", f"[{nid}] in:title",
                            "--state", "all", "--json", "number,state"])
         if rc == 0 and out:

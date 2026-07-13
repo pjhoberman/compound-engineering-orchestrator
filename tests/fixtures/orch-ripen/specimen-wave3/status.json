@@ -1,0 +1,10 @@
+{
+  "base_branch": "origin/main",
+  "nodes": {
+    "n101": {"status": "done", "annotation": null},
+    "n102": {"status": "not-started", "annotation": null},
+    "n103": {"status": "not-started", "annotation": null},
+    "n104": {"status": "not-started", "annotation": null},
+    "n105": {"status": "not-started", "annotation": null}
+  }
+}

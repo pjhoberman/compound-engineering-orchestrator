@@ -1,6 +1,6 @@
 {
   "name": "compound-engineering-orchestrator",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Project decomposition and orchestration skills layered on the compound-engineering plugin.",
   "type": "module",
   "private": true,

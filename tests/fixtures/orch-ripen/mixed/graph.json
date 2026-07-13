@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "node_count": 8,
+  "roots": ["n1", "n3", "n5", "n7", "n8"],
+  "is_forest": true,
+  "critical_path": ["n7", "n6"],
+  "edges": {
+    "n1": [],
+    "n2": ["n1"],
+    "n3": [],
+    "n4": ["n1"],
+    "n5": [],
+    "n6": ["n7"],
+    "n7": [],
+    "n8": []
+  },
+  "node_meta": {
+    "n1": {"stage": "work", "model": "generation", "no_pr": false, "exclusive_runtime": false, "base_commit": "cccc333", "files": [["app/a.rb", "create"]]},
+    "n2": {"stage": "plan", "model": "generation", "no_pr": false, "exclusive_runtime": false, "base_commit": "", "files": []},
+    "n3": {"stage": "work", "model": "ceiling", "no_pr": false, "exclusive_runtime": false, "base_commit": "dddd444", "files": [["app/c.rb", "create"]]},
+    "n4": {"stage": "plan", "model": "generation", "no_pr": false, "exclusive_runtime": false, "base_commit": "", "files": []},
+    "n5": {"stage": "plan", "model": "generation", "no_pr": false, "exclusive_runtime": false, "base_commit": "", "files": []},
+    "n6": {"stage": "plan", "model": "generation", "no_pr": false, "exclusive_runtime": false, "base_commit": "", "files": []},
+    "n7": {"stage": "plan", "model": "ceiling", "no_pr": false, "exclusive_runtime": false, "base_commit": "", "files": []},
+    "n8": {"stage": "work", "model": "generation", "no_pr": false, "exclusive_runtime": false, "base_commit": "eeee555", "files": [["app/h.rb", "create"]]}
+  },
+  "per_node": {
+    "n1": {"es": 0, "slack": 1, "critical": false},
+    "n2": {"es": 1, "slack": 1, "critical": false},
+    "n3": {"es": 0, "slack": 1, "critical": false},
+    "n4": {"es": 1, "slack": 1, "critical": false},
+    "n5": {"es": 0, "slack": 1, "critical": false},
+    "n6": {"es": 1, "slack": 0, "critical": true},
+    "n7": {"es": 0, "slack": 0, "critical": true},
+    "n8": {"es": 0, "slack": 1, "critical": false}
+  },
+  "findings": [],
+  "summary": {"correctness": 0, "advisory": 0}
+}

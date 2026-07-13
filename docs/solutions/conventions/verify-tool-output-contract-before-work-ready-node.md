@@ -78,3 +78,6 @@ producer the single source of parsing truth.
 - This surfaced via the dogfood practice in
   `docs/solutions/developer-experience/dogfood-decomposition-on-its-own-roadmap.md`.
 - Schema/parse rules: `skills/orch-decompose/references/task-graph-schema.md`.
+- The converse guard on the same contract:
+  `docs/solutions/conventions/no-producer-field-without-a-consumer.md` — extend the producer
+  only when a consumer joins on the field in the same change; a field no one reads is dead code.
