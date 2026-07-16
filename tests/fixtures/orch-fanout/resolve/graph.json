@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "node_meta": {
+    "n1": { "stage": "work", "model": "ceiling", "no_pr": false, "exclusive_runtime": false, "files": [] },
+    "n2": { "stage": "work", "model": "generation", "no_pr": false, "exclusive_runtime": true, "files": [] },
+    "n3": { "stage": "work", "model": null, "no_pr": false, "exclusive_runtime": false, "files": [] },
+    "n4": { "stage": "work", "model": "wat", "no_pr": false, "exclusive_runtime": false, "files": [] }
+  }
+}

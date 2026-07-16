@@ -527,3 +527,126 @@ describe("circuit_breaker.py", () => {
     expect(exitCode).toBe(2)
   })
 })
+
+describe("resolve_models.py", () => {
+  const RES = path.join(FIXTURES_DIR, "resolve")
+
+  async function resolve(extra: string[] = []) {
+    const { stdout, stderr, exitCode } = await runScript("resolve_models.py", [
+      "--waves",
+      path.join(RES, "waves.json"),
+      "--graph",
+      path.join(RES, "graph.json"),
+      ...extra,
+    ])
+    return { result: exitCode === 0 ? JSON.parse(stdout) : null, stdout, stderr, exitCode }
+  }
+
+  function nodeOf(result: any, id: string): any {
+    for (const w of result.waves) {
+      const n = w.nodes.find((n: any) => n.id === id)
+      if (n) return n
+    }
+    return undefined
+  }
+
+  test("default (builtin claude-code) reproduces the prose mapping: ceiling->inherit, generation->sonnet", async () => {
+    const { result, exitCode } = await resolve()
+    expect(exitCode).toBe(0)
+    expect(result.profile).toBe("claude-code")
+    expect(result.profile_source).toBe("builtin")
+    expect(nodeOf(result, "n1")).toMatchObject({ tier: "ceiling", resolved_tier: "ceiling", fallback: false, agent: "claude-code", model: "inherit" })
+    expect(nodeOf(result, "n2")).toMatchObject({ tier: "generation", resolved_tier: "generation", fallback: false, agent: "claude-code", model: "sonnet" })
+  })
+
+  test("null and unrecognized tiers fall back to the profile's ceiling spec, flagged", async () => {
+    const { result } = await resolve()
+    // n3 model is null, n4 model is an unrecognized "wat" -> both fall back to ceiling
+    expect(nodeOf(result, "n3")).toMatchObject({ tier: null, resolved_tier: "ceiling", fallback: true, model: "inherit" })
+    expect(nodeOf(result, "n4")).toMatchObject({ tier: "wat", resolved_tier: "ceiling", fallback: true, model: "inherit" })
+  })
+
+  test("preserves wave order and kind; sorts nodes by id within a wave", async () => {
+    const { result } = await resolve()
+    expect(result.wave_count).toBe(2)
+    expect(result.waves[0].kind).toBe("parallel")
+    expect(result.waves[0].nodes.map((n: any) => n.id)).toEqual(["n1", "n3", "n4"]) // input was n3,n1,n4
+    expect(result.waves[1].kind).toBe("solo")
+    expect(result.waves[1].reason).toBe("exclusive_runtime")
+    expect(result.waves[1].nodes.map((n: any) => n.id)).toEqual(["n2"])
+  })
+
+  test("builtin non-Claude profiles are selectable and carry agent + gateway env names", async () => {
+    const { result } = await resolve(["--profile", "conductor-mixed"])
+    expect(result.profile).toBe("conductor-mixed")
+    expect(nodeOf(result, "n2")).toMatchObject({ agent: "codex", model: "gpt-5-codex" }) // generation node -> codex
+    expect(nodeOf(result, "n1")).toMatchObject({ agent: "claude-code", model: "opus" })
+  })
+
+  test("a --profiles file overrides builtins; env-var names pass through; default_profile is honored", async () => {
+    const { result } = await resolve(["--profiles", path.join(RES, "profiles-custom.json")])
+    expect(result.profile).toBe("gw") // the file's default_profile
+    expect(result.profile_source).toContain("profiles-custom.json")
+    expect(nodeOf(result, "n2")).toMatchObject({ agent: "codex", model: "gpt-5-mini", base_url_env: "GW_URL", api_key_env: "GW_KEY" })
+    // a claude-code node still gets null env fields, not missing keys
+    expect(nodeOf(result, "n1").base_url_env).toBe("GW_URL")
+  })
+
+  test("an unknown --profile name exits 2 and lists what's available", async () => {
+    const { exitCode, stderr } = await resolve(["--profile", "nope"])
+    expect(exitCode).toBe(2)
+    expect(stderr).toContain("not found")
+  })
+
+  test("a profile missing a tier spec exits 2 (fallback target must exist)", async () => {
+    const { exitCode, stderr } = await resolve(["--profiles", path.join(RES, "profiles-missing-tier.json")])
+    expect(exitCode).toBe(2)
+    expect(stderr).toContain("generation")
+  })
+
+  test("an unknown agent in a profile exits 2", async () => {
+    const { exitCode, stderr } = await resolve(["--profiles", path.join(RES, "profiles-bad-agent.json")])
+    expect(exitCode).toBe(2)
+    expect(stderr).toContain("agent")
+  })
+
+  test("an unknown tier key in a profile exits 2 (catches typos)", async () => {
+    const { exitCode, stderr } = await resolve(["--profiles", path.join(RES, "profiles-unknown-tier.json")])
+    expect(exitCode).toBe(2)
+    expect(stderr).toContain("celing")
+  })
+
+  test("a graph without node_meta exits 2", async () => {
+    const { exitCode, stderr } = await runScript("resolve_models.py", [
+      "--waves",
+      path.join(RES, "waves.json"),
+      "--graph",
+      path.join(FIXTURES_DIR, "partition-no-meta", "graph.json"),
+    ])
+    expect(exitCode).toBe(2)
+    expect(stderr).toContain("node_meta")
+  })
+
+  test("a missing --waves file exits 2 with a message, not a traceback", async () => {
+    const { exitCode, stderr } = await runScript("resolve_models.py", [
+      "--waves",
+      "/nonexistent/waves.json",
+      "--graph",
+      path.join(RES, "graph.json"),
+    ])
+    expect(exitCode).toBe(2)
+    expect(stderr).toContain("cannot read")
+    expect(stderr).not.toContain("Traceback")
+  })
+
+  test("determinism: identical output across runs", async () => {
+    const a = await resolve()
+    const b = await resolve()
+    expect(a.stdout).toBe(b.stdout)
+  })
+
+  test("usage error: missing required args exits 2", async () => {
+    const { exitCode } = await runScript("resolve_models.py", [])
+    expect(exitCode).toBe(2)
+  })
+})

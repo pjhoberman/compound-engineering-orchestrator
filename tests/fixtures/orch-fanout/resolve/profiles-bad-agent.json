@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "oops": {
+      "ceiling": { "agent": "claude-code", "model": "opus" },
+      "generation": { "agent": "gpt", "model": "gpt-5-mini" }
+    }
+  }
+}
