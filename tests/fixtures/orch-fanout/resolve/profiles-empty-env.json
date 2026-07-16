@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "badenv": {
+      "ceiling": { "agent": "claude-code", "model": "opus", "base_url_env": "" },
+      "generation": { "agent": "claude-code", "model": "sonnet" }
+    }
+  }
+}

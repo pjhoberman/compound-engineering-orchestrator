@@ -100,6 +100,12 @@ def validate_profiles(doc, source):
             if agent not in ALLOWED_AGENTS:
                 fail(f"{source}: profile {name!r} tier {tier!r} has unknown agent {agent!r} "
                      f"(expected one of {sorted(ALLOWED_AGENTS)})")
+            # Gateway env fields are optional, but a present one must name a real env var —
+            # an empty or non-string value would reach Phase 4 as a bogus env-var name.
+            for field in ("base_url_env", "api_key_env"):
+                if field in spec and (not isinstance(spec[field], str) or not spec[field]):
+                    fail(f"{source}: profile {name!r} tier {tier!r} field {field!r} must be a "
+                         f"non-empty string when present")
     return doc
 
 

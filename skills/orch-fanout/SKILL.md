@@ -28,16 +28,24 @@ ON="${CLAUDE_SKILL_DIR}/../orch-next/scripts"
 if [ -n "${CLAUDE_SKILL_DIR}" ] && [ -f "${SELF}/wave_plan.py" ] && [ -f "${SELF}/partition.py" ] \
    && [ -f "${SELF}/resolve_models.py" ] \
    && [ -f "${OD}/graph_compute.py" ] && [ -f "${OD}/reorient.py" ] && [ -f "${ON}/frontier.py" ]; then
-  python3 "${OD}/graph_compute.py" <dir> > /tmp/orch-graph.json
-  python3 "${OD}/reorient.py"      <dir> > /tmp/orch-status.json
-  python3 "${ON}/frontier.py"  --graph /tmp/orch-graph.json --status /tmp/orch-status.json > /tmp/orch-frontier.json
-  python3 "${SELF}/partition.py" --graph /tmp/orch-graph.json --frontier /tmp/orch-frontier.json > /tmp/orch-partition.json
-  python3 "${SELF}/wave_plan.py" --partition /tmp/orch-partition.json --graph /tmp/orch-graph.json > /tmp/orch-waves.json
-  # Resolve each node's model tier to a concrete spawn spec (model + agent + optional gateway env).
-  # Omit --profiles to use the built-in claude-code profile (behavior-preserving); add
-  # --profiles <path> --profile <name> for a non-Claude runtime (see references/model-profile-schema.md).
-  python3 "${SELF}/resolve_models.py" --waves /tmp/orch-waves.json --graph /tmp/orch-graph.json > /tmp/orch-resolved.json
-  cat /tmp/orch-resolved.json
+  # Model-profile discovery (see references/model-profile-schema.md): a project override committed
+  # with the graph wins, else a user-global file, else the built-in claude-code profile. Add
+  # `--profile <name>` yourself to pick a non-default profile from whichever file is found.
+  PROFILE_ARGS=""
+  if [ -f "<dir>/model-profiles.json" ]; then
+    PROFILE_ARGS="--profiles <dir>/model-profiles.json"
+  elif [ -f "${HOME}/.claude/orch-fanout-profiles.json" ]; then
+    PROFILE_ARGS="--profiles ${HOME}/.claude/orch-fanout-profiles.json"
+  fi
+  # Chain with && so a failing producer stops the pipeline — Phase 3 must never read a stale
+  # or empty artifact left over from a prior run.
+  python3 "${OD}/graph_compute.py" <dir> > /tmp/orch-graph.json \
+  && python3 "${OD}/reorient.py"      <dir> > /tmp/orch-status.json \
+  && python3 "${ON}/frontier.py"  --graph /tmp/orch-graph.json --status /tmp/orch-status.json > /tmp/orch-frontier.json \
+  && python3 "${SELF}/partition.py" --graph /tmp/orch-graph.json --frontier /tmp/orch-frontier.json > /tmp/orch-partition.json \
+  && python3 "${SELF}/wave_plan.py" --partition /tmp/orch-partition.json --graph /tmp/orch-graph.json > /tmp/orch-waves.json \
+  && python3 "${SELF}/resolve_models.py" --waves /tmp/orch-waves.json --graph /tmp/orch-graph.json ${PROFILE_ARGS} > /tmp/orch-resolved.json \
+  && cat /tmp/orch-resolved.json
 else
   echo "orch-fanout requires Claude Code and the sibling orch-decompose/orch-next skills: bundled computation is unavailable on this platform."
 fi

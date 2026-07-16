@@ -616,6 +616,12 @@ describe("resolve_models.py", () => {
     expect(stderr).toContain("celing")
   })
 
+  test("a present-but-empty gateway env field exits 2 (would be a bogus env-var name)", async () => {
+    const { exitCode, stderr } = await resolve(["--profiles", path.join(RES, "profiles-empty-env.json")])
+    expect(exitCode).toBe(2)
+    expect(stderr).toContain("base_url_env")
+  })
+
   test("a graph without node_meta exits 2", async () => {
     const { exitCode, stderr } = await runScript("resolve_models.py", [
       "--waves",
