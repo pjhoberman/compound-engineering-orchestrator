@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "typo": {
+      "celing": { "agent": "claude-code", "model": "opus" },
+      "ceiling": { "agent": "claude-code", "model": "opus" },
+      "generation": { "agent": "claude-code", "model": "sonnet" }
+    }
+  }
+}

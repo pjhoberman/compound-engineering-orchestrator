@@ -1,0 +1,7 @@
+{
+  "waves": [
+    { "kind": "parallel", "ids": ["n3", "n1", "n4"] },
+    { "kind": "solo", "id": "n2", "reason": "exclusive_runtime" }
+  ],
+  "wave_count": 2
+}

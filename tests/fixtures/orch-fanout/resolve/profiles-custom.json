@@ -1,0 +1,9 @@
+{
+  "default_profile": "gw",
+  "profiles": {
+    "gw": {
+      "ceiling": { "agent": "claude-code", "model": "anthropic/claude-opus", "base_url_env": "GW_URL", "api_key_env": "GW_KEY" },
+      "generation": { "agent": "codex", "model": "gpt-5-mini", "base_url_env": "GW_URL", "api_key_env": "GW_KEY" }
+    }
+  }
+}

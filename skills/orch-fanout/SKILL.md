@@ -26,12 +26,26 @@ SELF="${CLAUDE_SKILL_DIR}/scripts"
 OD="${CLAUDE_SKILL_DIR}/../orch-decompose/scripts"
 ON="${CLAUDE_SKILL_DIR}/../orch-next/scripts"
 if [ -n "${CLAUDE_SKILL_DIR}" ] && [ -f "${SELF}/wave_plan.py" ] && [ -f "${SELF}/partition.py" ] \
+   && [ -f "${SELF}/resolve_models.py" ] \
    && [ -f "${OD}/graph_compute.py" ] && [ -f "${OD}/reorient.py" ] && [ -f "${ON}/frontier.py" ]; then
-  python3 "${OD}/graph_compute.py" <dir> > /tmp/orch-graph.json
-  python3 "${OD}/reorient.py"      <dir> > /tmp/orch-status.json
-  python3 "${ON}/frontier.py"  --graph /tmp/orch-graph.json --status /tmp/orch-status.json > /tmp/orch-frontier.json
-  python3 "${SELF}/partition.py" --graph /tmp/orch-graph.json --frontier /tmp/orch-frontier.json > /tmp/orch-partition.json
-  python3 "${SELF}/wave_plan.py" --partition /tmp/orch-partition.json --graph /tmp/orch-graph.json
+  # Model-profile discovery (see references/model-profile-schema.md): a project override committed
+  # with the graph wins, else a user-global file, else the built-in claude-code profile. Add
+  # `--profile <name>` yourself to pick a non-default profile from whichever file is found.
+  PROFILE_ARGS=""
+  if [ -f "<dir>/model-profiles.json" ]; then
+    PROFILE_ARGS="--profiles <dir>/model-profiles.json"
+  elif [ -f "${HOME}/.claude/orch-fanout-profiles.json" ]; then
+    PROFILE_ARGS="--profiles ${HOME}/.claude/orch-fanout-profiles.json"
+  fi
+  # Chain with && so a failing producer stops the pipeline — Phase 3 must never read a stale
+  # or empty artifact left over from a prior run.
+  python3 "${OD}/graph_compute.py" <dir> > /tmp/orch-graph.json \
+  && python3 "${OD}/reorient.py"      <dir> > /tmp/orch-status.json \
+  && python3 "${ON}/frontier.py"  --graph /tmp/orch-graph.json --status /tmp/orch-status.json > /tmp/orch-frontier.json \
+  && python3 "${SELF}/partition.py" --graph /tmp/orch-graph.json --frontier /tmp/orch-frontier.json > /tmp/orch-partition.json \
+  && python3 "${SELF}/wave_plan.py" --partition /tmp/orch-partition.json --graph /tmp/orch-graph.json > /tmp/orch-waves.json \
+  && python3 "${SELF}/resolve_models.py" --waves /tmp/orch-waves.json --graph /tmp/orch-graph.json ${PROFILE_ARGS} > /tmp/orch-resolved.json \
+  && cat /tmp/orch-resolved.json
 else
   echo "orch-fanout requires Claude Code and the sibling orch-decompose/orch-next skills: bundled computation is unavailable on this platform."
 fi
@@ -45,8 +59,8 @@ If the guard's `else` branch fired, say so plainly and stop. If `graph_compute.p
 
 Present the wave plan before spawning anything. **Render every node as `id (title)`, never a bare ID** (the title is the `title` column in `index.md`) — a human reviewing the preview won't recall what `n7` is, but `n7 (CO canopy data load)` is self-explanatory. Bare IDs are for the scripts' JSON only. For each wave, in order, show:
 
-- **Parallel wave:** each node as `id (title)`, its target worktree, the model it will run on (mapped from the node's `model` tier in `node_meta` — see Phase 4), and the reason they're safe together (file-disjoint + runtime-independent).
-- **Solo wave:** the single node as `id (title)`, its model, and why it is alone (`exclusive_runtime` — needs a non-shareable server/DB/port/singleton).
+- **Parallel wave:** each node as `id (title)`, its target worktree, the **agent + model it will run on** (read from `/tmp/orch-resolved.json` — the resolved spawn spec, not the raw tier), and the reason they're safe together (file-disjoint + runtime-independent). Mark any node whose spec has `fallback: true` (its tier was null/unrecognized and fell back to `ceiling`) so the user can catch it. If the resolved `agent` is not `claude-code`, say so explicitly — that node is a **human-dispatch item** (see Phase 4), not something this run spawns.
+- **Solo wave:** the single node as `id (title)`, its agent + model, and why it is alone (`exclusive_runtime` — needs a non-shareable server/DB/port/singleton).
 
 Also restate which ready nodes were **excluded** from fan-out entirely (from Phase 2) and that they must be driven by hand. This preview is the user's gate: a node that should have been `exclusive_runtime` but wasn't is visible here as a member of a parallel wave — the user can stop and re-flag it before any run starts.
 
@@ -63,7 +77,12 @@ On confirm, for the wave:
 - **Parallel wave:** spawn one worktree-isolated `/lfg` run per node, reusing `ce-work`'s worktree creation, pre-dispatch file-collision check, and dependency-order merge (abort + re-dispatch on conflict). Run them concurrently.
 - **Solo wave:** run the single node's `/lfg` to completion before anything else — never concurrent with another run.
 
-**Per-run model.** Each node carries a `model` tier in `node_meta` (`generation` | `ceiling`, stamped by `orch-decompose`). Map it to a concrete model for that node's `/lfg` spawn — `ceiling` → the session's top model (inherit), `generation` → the platform's mid-tier model (e.g. `sonnet` in Claude Code) — and pass it as the spawn's model override, the same way `ce-code-review` tiers its persona dispatches. A single parallel wave can therefore run a `ceiling` node on the top model alongside `generation` nodes on the mid tier. A node whose `model` is null, absent, or unrecognized falls back to the session's top model (the safe default — `graph_compute` flags an unrecognized tier as an `invalid_model` finding at decompose time, so this should be rare). The tier is a recommendation: the user can override any node's model at the Phase 3 preview before confirming.
+**Per-run model.** Don't map tiers by hand — `resolve_models.py` (Phase 2) already turned each node's `model` tier into a concrete spawn spec in `/tmp/orch-resolved.json`: `{id, tier, resolved_tier, fallback, agent, model, base_url_env, api_key_env}`. For each node use its spec:
+
+- **`agent: claude-code`** — spawn its `/lfg` run with `model` as the spawn's model override (`inherit` = the session's current model), the same way `ce-code-review` tiers its persona dispatches. A single parallel wave can thus run a `ceiling` node on the top model alongside `generation` nodes on the mid tier. If the spec has `base_url_env`/`api_key_env`, those name the env vars pointing the session at an Anthropic-compatible gateway — they must already be exported for the run; if a named var is unset, stop and tell the user rather than silently falling back to the default endpoint.
+- **`agent` is `codex` / `cursor` / `opencode`** — this run **cannot** spawn that agent (Claude Code has no API to launch a non-Claude agent). Treat the node as a **human-dispatch item**: do not spawn it, surface it in the wave summary as "run in a Conductor workspace with `<agent>` (`<model>`)", and continue with the Claude nodes. The node stays unstarted in the graph until a person drives it.
+
+The tier and profile are recommendations: the user can override any node's model/agent at the Phase 3 preview before confirming (or point at a different profile — see `references/model-profile-schema.md`). A `fallback: true` spec means the node's tier was null/absent/unrecognized and resolved to `ceiling` (the safe default — `graph_compute` flags an unrecognized tier as an `invalid_model` finding at decompose time, so this should be rare).
 
 After each wave completes and merges, **write the recovery manifest** via `scripts/manifest.py` (the wave boundary) so a dead or context-compacted session resumes by reading it. On resume, reconstruct state with `scripts/reconcile.py` (git is authoritative; the manifest is a hint) and continue from the first unfinished wave.
 
